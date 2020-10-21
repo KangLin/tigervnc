@@ -617,7 +617,6 @@ int main(int argc, char** argv)
 
   mkvnchomedir();
 
-  CSecurity::upg = &dlg;
 #ifdef HAVE_GNUTLS
   CSecurityTLS::msg = &dlg;
 #endif
@@ -698,8 +697,8 @@ int main(int argc, char** argv)
 #endif
   }
 
-  CConn *cc = new CConn(vncServerName, sock);
-
+  CConn *cc = new CConn(vncServerName, sock, &dlg);
+  
   inMainloop = true;
   while (!exitMainloop)
     run_mainloop();

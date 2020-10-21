@@ -20,16 +20,19 @@
 
 #include <rfb/CSecurity.h>
 #include <rfb/Security.h>
+#include <rfb/UserPasswdGetter.h>
 
 namespace rfb {
 
   class CSecurityVncAuth : public CSecurity {
   public:
-    CSecurityVncAuth(CConnection* cc) : CSecurity(cc) {}
+    CSecurityVncAuth(CConnection* cc, UserPasswdGetter* pug);
     virtual ~CSecurityVncAuth() {}
     virtual bool processMsg();
     virtual int getType() const {return secTypeVncAuth;};
     virtual const char* description() const {return "No Encryption";}
+  private:
+    UserPasswdGetter *upg;
   };
 }
 #endif

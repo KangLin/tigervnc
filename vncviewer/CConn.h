@@ -22,6 +22,7 @@
 
 #include <rfb/CConnection.h>
 #include <rdr/FdInStream.h>
+#include <rfb/UserPasswdGetter.h>
 
 #include <FL/Fl.H>
 
@@ -33,7 +34,9 @@ class CConn : public rfb::CConnection,
               public rdr::FdInStreamBlockCallback
 {
 public:
-  CConn(const char* vncServerName, network::Socket* sock);
+  CConn(const char* vncServerName,
+        network::Socket* sock = NULL,
+        rfb::UserPasswdGetter* upg = NULL);
   ~CConn();
 
   const char *connectionInfo();
