@@ -23,6 +23,7 @@
 #include <rfb/util.h>
 
 #include <rdr/OutStream.h>
+#include <assert.h>
 
 using namespace rfb;
 
@@ -32,8 +33,9 @@ bool CSecurityPlain::processMsg()
 
   CharArray username;
   CharArray password;
-
-  (CSecurity::upg)->getUserPasswd(cc->isSecure(), &username.buf, &password.buf);
+  
+  assert(upg != NULL); /* (upg == NULL) means bug in the viewer, please call SecurityClient::setUserPasswdGetter */
+  upg->getUserPasswd(cc->isSecure(), &username.buf, &password.buf);
 
   // Return the response to the server
   os->writeU32(strlen(username.buf));

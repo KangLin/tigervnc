@@ -72,14 +72,15 @@ static const PixelFormat lowColourPF(8, 6, false, true,
 static const PixelFormat mediumColourPF(8, 8, false, true,
                                         7, 7, 3, 5, 2, 0);
 
-CConn::CConn(const char* vncServerName, network::Socket* socket=NULL)
-  : serverHost(0), serverPort(0), desktop(NULL),
+CConn::CConn(const char* vncServerName,
+             network::Socket* socket,
+             rfb::UserPasswdGetter* upg)
+  : serverHost(0), serverPort(0), sock(socket), desktop(NULL),
     updateCount(0), pixelCount(0),
     lastServerEncoding((unsigned int)-1)
 {
   setShared(::shared);
-  sock = socket;
-
+  
   supportsLocalCursor = true;
   supportsDesktopResize = true;
   supportsLEDState = false;
@@ -119,9 +120,10 @@ CConn::CConn(const char* vncServerName, network::Socket* socket=NULL)
   // See callback below
   sock->inStream().setBlockCallback(this);
 
+  security.setUserPasswdGetter(upg);
   setServerName(serverHost);
   setStreams(&sock->inStream(), &sock->outStream());
-
+    
   initialiseProtocol();
 
   OptionsDialog::addCallback(handleOptions, this);

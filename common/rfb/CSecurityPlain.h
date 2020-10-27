@@ -21,15 +21,20 @@
 
 #include <rfb/CSecurity.h>
 #include <rfb/Security.h>
+#include <rfb/UserPasswdGetter.h>
 
 namespace rfb {
 
   class CSecurityPlain : public CSecurity {
   public:
-    CSecurityPlain(CConnection* cc) : CSecurity(cc) {}
+    CSecurityPlain(CConnection* cc, UserPasswdGetter* upg)
+        : CSecurity(cc), upg(upg) {}
     virtual bool processMsg();
     virtual int getType() const { return secTypePlain; }
     virtual const char* description() const { return "ask for username and password"; }
+  private:
+    UserPasswdGetter *upg;
   };
+  
 }
 #endif

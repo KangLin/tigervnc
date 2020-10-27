@@ -220,6 +220,7 @@ namespace rfb {
 
     CSecurity *csecurity;
     SecurityClient security;
+    
   protected:
     void setState(stateEnum s) { state_ = s; }
 
