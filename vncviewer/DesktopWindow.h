@@ -71,7 +71,7 @@ public:
   // Clipboard events
   void handleClipboardRequest();
   void handleClipboardAnnounce(bool available);
-  void handleClipboardData(const char* data);
+  void handleClipboardData(unsigned int format, const char* data, size_t length);
 
   // Fl_Window callback methods
   virtual void show();

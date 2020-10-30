@@ -77,7 +77,7 @@ public:
 
   virtual void handleClipboardRequest();
   virtual void handleClipboardAnnounce(bool available);
-  virtual void handleClipboardData(const char* data);
+  virtual void handleClipboardData(unsigned int format, const char* data, size_t length);
 
 private:
 

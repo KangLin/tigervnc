@@ -484,9 +484,9 @@ void DesktopWindow::handleClipboardAnnounce(bool available)
   viewport->handleClipboardAnnounce(available);
 }
 
-void DesktopWindow::handleClipboardData(const char* data)
+void DesktopWindow::handleClipboardData(unsigned int format, const char* data, size_t length)
 {
-  viewport->handleClipboardData(data);
+  viewport->handleClipboardData(format, data, length);
 }
 
 

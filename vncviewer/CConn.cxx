@@ -429,9 +429,9 @@ void CConn::handleClipboardAnnounce(bool available)
   desktop->handleClipboardAnnounce(available);
 }
 
-void CConn::handleClipboardData(const char* data)
+void CConn::handleClipboardData(unsigned int format, const char* data, size_t length)
 {
-  desktop->handleClipboardData(data);
+  desktop->handleClipboardData(format, data, length);
 }
 
 
