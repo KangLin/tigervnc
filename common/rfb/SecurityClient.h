@@ -25,19 +25,25 @@
 #include <rfb/Configuration.h>
 #include <rfb/Security.h>
 #include <rfb/CSecurity.h>
+#include <rfb/UserPasswdGetter.h>
 
 namespace rfb {
 
   class SecurityClient : public Security {
   public:
     SecurityClient(void) : Security(secTypes) {}
-
+    
+    void setUserPasswdGetter(UserPasswdGetter* upg) {this->upg = upg;}
+    
     /* Create client side CSecurity class instance */
     CSecurity* GetCSecurity(CConnection* cc, rdr::U32 secType);
 
     static void setDefaults(void);
 
     static StringParameter secTypes;
+        
+  private:
+    UserPasswdGetter* upg;
   };
 
 }

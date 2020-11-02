@@ -535,8 +535,8 @@ void CConnection::handleClipboardProvide(rdr::U32 flags,
 
   serverClipboard = convertLF((const char*)data[0], lengths[0]);
 
-  // FIXME: Should probably verify that this data was actually requested
-  handleClipboardData(serverClipboard);
+  // Should probably verify that this data was actually requested
+  handleClipboardData(flags & clipboardFormatMask, serverClipboard, *lengths);
 }
 
 void CConnection::authSuccess()
@@ -560,17 +560,18 @@ void CConnection::handleClipboardAnnounce(bool available)
 {
 }
 
-void CConnection::handleClipboardData(const char* data)
+void CConnection::handleClipboardData(unsigned int format, const char* data, size_t length)
 {
 }
 
 void CConnection::requestClipboard()
 {
   if (serverClipboard != NULL) {
-    handleClipboardData(serverClipboard);
+    handleClipboardData(clipboardUTF8, serverClipboard, strlen(serverClipboard));
     return;
   }
 
+  //TODO: support request format
   if (server.clipboardFlags() & rfb::clipboardRequest)
     writer()->writeClipboardRequest(rfb::clipboardUTF8);
 }
@@ -587,13 +588,17 @@ void CConnection::announceClipboard(bool available)
   }
 }
 
-void CConnection::sendClipboardData(const char* data)
+void CConnection::sendClipboardData(unsigned int format, const char* data, int length)
 {
   if (server.clipboardFlags() & rfb::clipboardProvide) {
-    CharArray filtered(convertCRLF(data));
-    size_t sizes[1] = { strlen(filtered.buf) + 1 };
-    const rdr::U8* data[1] = { (const rdr::U8*)filtered.buf };
-    writer()->writeClipboardProvide(rfb::clipboardUTF8, sizes, data);
+      if(rfb::clipboardUTF8 & format) {
+          CharArray filtered(convertCRLF(data));
+          size_t sizes[1] = { strlen(filtered.buf) + 1 };
+          const rdr::U8* data[1] = { (const rdr::U8*)filtered.buf };
+          writer()->writeClipboardProvide(rfb::clipboardUTF8, sizes, data);
+      } else {
+          
+      }
   } else {
     CharArray latin1(utf8ToLatin1(data));
 

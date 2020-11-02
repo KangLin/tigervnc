@@ -21,17 +21,20 @@
 
 #ifdef WIN32 
 
-#include <windows.h>
-#include <wininet.h>
-#include <shlobj.h>
-#include <shlguid.h>
-#include <wininet.h>
-
-
-/* Windows has different names for these */
+ /* Windows has different names for these */
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 
+#include <WinSock2.h>
+#include <ws2tcpip.h>
+#include <Windows.h>
+#include <wininet.h>
+#include <shlobj.h>
+
+#ifdef __GNUC__
+
+#include <shlguid.h>
+#include <wininet.h>
 
 /* MSLLHOOKSTRUCT structure*/
 #ifndef LLMHF_INJECTED
@@ -181,7 +184,26 @@ DECLARE_INTERFACE_(IActiveDesktop, IUnknown)
 	STDMETHOD(SetWallpaperOptions)(THIS_ LPCWALLPAPEROPT,DWORD) PURE;
 };
 #undef INTERFACE
+
 #endif /* HAVE_ACTIVE_DESKTOP_H */
+
+#else /*__GNUC__*/
+
+#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+#define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+#else
+#define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+#endif
+
+struct timezone
+{
+	__int32 tz_minuteswest; /* minutes W of Greenwich */
+	BOOL    tz_dsttime;     /* type of dst correction */
+};
+
+int gettimeofday(struct timeval *tv, struct timezone *tz);
+
+#endif /*__GNUC__*/
 
 #endif /* WIN32 */
 #endif /* OS_W32TIGER_H */

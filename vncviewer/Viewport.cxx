@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <rfb/clipboardTypes.h>
 #include <rfb/CMsgWriter.h>
 #include <rfb/LogWriter.h>
 #include <rfb/Exception.h>
@@ -311,24 +312,30 @@ void Viewport::handleClipboardAnnounce(bool available)
   cc->requestClipboard();
 }
 
-void Viewport::handleClipboardData(const char* data)
+void Viewport::handleClipboardData(unsigned int format, const char* data, size_t length)
 {
-  size_t len;
-
-  if (!hasFocus())
-    return;
-
-  len = strlen(data);
-
-  vlog.debug("Got clipboard data (%d bytes)", (int)len);
-
-  // RFB doesn't have separate selection and clipboard concepts, so we
-  // dump the data into both variants.
+  if(rfb::clipboardUTF8 & format)
+  {
+      size_t len;
+    
+      if (!hasFocus())
+        return;
+    
+      len = strlen(data);
+    
+      vlog.debug("Got clipboard data (%d bytes)", (int)len);
+      
+      // RFB doesn't have separate selection and clipboard concepts, so we
+      // dump the data into both variants.
 #if !defined(WIN32) && !defined(__APPLE__)
-  if (setPrimary)
-    Fl::copy(data, len, 0);
+      if (setPrimary)
+          Fl::copy(data, len, 0);
 #endif
-  Fl::copy(data, len, 1);
+      Fl::copy(data, len, 1);
+  } else {
+      //TODO: 
+      vlog.info("The format don't implement");
+  }
 }
 
 void Viewport::setLEDState(unsigned int state)
@@ -571,7 +578,7 @@ int Viewport::handle(int event)
     vlog.debug("Sending clipboard data (%d bytes)", (int)strlen(filtered));
 
     try {
-      cc->sendClipboardData(filtered);
+      cc->sendClipboardData(rfb::clipboardUTF8, filtered, strlen(filtered));
     } catch (rdr::Exception& e) {
       vlog.error("%s", e.str());
       exit_vncviewer(e.str());
