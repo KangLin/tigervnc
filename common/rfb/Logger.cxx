@@ -87,5 +87,3 @@ Logger::listLoggers() {
     current = current->m_next;
   }
 }
-
-
