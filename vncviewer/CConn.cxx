@@ -108,9 +108,7 @@ CConn::CConn(const char* vncServerName,
       }
     } catch (rdr::Exception& e) {
       vlog.error("%s", e.str());
-      if (alertOnFatalError)
-        fl_alert("%s", e.str());
-      exit_vncviewer();
+      exit_vncviewer(e.str());
       return;
     }
   }
