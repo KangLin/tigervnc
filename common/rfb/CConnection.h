@@ -160,7 +160,7 @@ namespace rfb {
     // requestClipboard(). Note that this function might never be
     // called if the clipboard data was no longer available when the
     // server received the request.
-    virtual void handleClipboardData(const char* data);
+    virtual void handleClipboardData(unsigned int format, const char* data, size_t length);
 
 
     // Other methods
@@ -178,7 +178,7 @@ namespace rfb {
     // sendClipboardData() transfers the clipboard data to the server
     // and should be called whenever the server has requested the
     // clipboard via handleClipboardRequest().
-    virtual void sendClipboardData(const char* data);
+    virtual void sendClipboardData(unsigned int format, const char* data, int length);
 
     // refreshFramebuffer() forces a complete refresh of the entire
     // framebuffer
@@ -227,6 +227,7 @@ namespace rfb {
 
     CSecurity *csecurity;
     SecurityClient security;
+    
   protected:
     void setState(stateEnum s) { state_ = s; }
 

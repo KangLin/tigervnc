@@ -21,6 +21,15 @@
 #include <config.h>
 #endif
 
+#include <os/os.h>
+#include "i18n.h"
+#include "parameters.h"
+#include "rfb/Exception.h"
+#include "vncviewer.h"
+#include "ServerDialog.h"
+#include "OptionsDialog.h"
+#include "fltk_layout.h"
+
 #include <FL/Fl.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Input_Choice.H>
@@ -35,15 +44,8 @@
 #include <iostream>
 #include <fstream>
 
-#include <os/os.h>
-#include <rfb/Exception.h>
 
-#include "ServerDialog.h"
-#include "OptionsDialog.h"
-#include "fltk_layout.h"
-#include "i18n.h"
-#include "vncviewer.h"
-#include "parameters.h"
+
 
 
 using namespace std;

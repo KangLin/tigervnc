@@ -23,7 +23,17 @@
 #include <config.h>
 #endif
 
-#include <os/w32tiger.h>
+#ifdef WIN32
+	#include <os/w32tiger.h>
+#endif
+
+#ifdef __GNUC__
+#include <sys/time.h>
+#endif
+
+#ifndef PATH_MAX
+#define PATH_MAX        4096
+#endif
 
 /*
  * Get VNC home directory ($HOME/.vnc or %APPDATA%/vnc/).

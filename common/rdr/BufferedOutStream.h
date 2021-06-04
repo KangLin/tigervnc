@@ -24,7 +24,7 @@
 #ifndef __RDR_BUFFEREDOUTSTREAM_H__
 #define __RDR_BUFFEREDOUTSTREAM_H__
 
-#include <sys/time.h>
+#include <os/os.h>
 
 #include <rdr/OutStream.h>
 

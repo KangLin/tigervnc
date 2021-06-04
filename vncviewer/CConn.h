@@ -20,10 +20,11 @@
 #ifndef __CCONN_H__
 #define __CCONN_H__
 
-#include <FL/Fl.H>
-
 #include <rfb/CConnection.h>
 #include <rdr/FdInStream.h>
+#include <rfb/UserPasswdGetter.h>
+
+#include <FL/Fl.H>
 
 namespace network { class Socket; }
 
@@ -32,7 +33,9 @@ class DesktopWindow;
 class CConn : public rfb::CConnection
 {
 public:
-  CConn(const char* vncServerName, network::Socket* sock);
+  CConn(const char* vncServerName,
+        network::Socket* sock = NULL,
+	    rfb::UserPasswdGetter* upg = NULL);
   ~CConn();
 
   const char *connectionInfo();
@@ -71,7 +74,7 @@ public:
 
   virtual void handleClipboardRequest();
   virtual void handleClipboardAnnounce(bool available);
-  virtual void handleClipboardData(const char* data);
+  virtual void handleClipboardData(unsigned int format, const char* data, size_t length);
 
 private:
 

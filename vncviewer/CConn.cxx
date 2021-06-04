@@ -41,9 +41,6 @@
 #include <network/UnixSocket.h>
 #endif
 
-#include <FL/Fl.H>
-#include <FL/fl_ask.H>
-
 #include "CConn.h"
 #include "OptionsDialog.h"
 #include "DesktopWindow.h"
@@ -55,6 +52,9 @@
 #ifdef WIN32
 #include "win32.h"
 #endif
+
+#include <FL/Fl.H>
+#include <FL/fl_ask.H>
 
 using namespace rdr;
 using namespace rfb;
@@ -75,14 +75,14 @@ static const PixelFormat mediumColourPF(8, 8, false, true,
 // Time new bandwidth estimates are weighted against (in ms)
 static const unsigned bpsEstimateWindow = 1000;
 
-CConn::CConn(const char* vncServerName, network::Socket* socket=NULL)
+CConn::CConn(const char* vncServerName, network::Socket* socket, rfb::UserPasswdGetter* upg)
   : serverHost(0), serverPort(0), desktop(NULL),
     updateCount(0), pixelCount(0),
     lastServerEncoding((unsigned int)-1), bpsEstimate(20000000)
 {
   setShared(::shared);
   sock = socket;
-
+  
   supportsLocalCursor = true;
   supportsCursorPosition = true;
   supportsDesktopResize = true;
@@ -119,9 +119,10 @@ CConn::CConn(const char* vncServerName, network::Socket* socket=NULL)
 
   Fl::add_fd(sock->getFd(), FL_READ | FL_EXCEPT, socketEvent, this);
 
+  security.setUserPasswdGetter(upg);
   setServerName(serverHost);
   setStreams(&sock->inStream(), &sock->outStream());
-
+    
   initialiseProtocol();
 
   OptionsDialog::addCallback(handleOptions, this);
@@ -466,9 +467,9 @@ void CConn::handleClipboardAnnounce(bool available)
   desktop->handleClipboardAnnounce(available);
 }
 
-void CConn::handleClipboardData(const char* data)
+void CConn::handleClipboardData(unsigned int format, const char* data, size_t length)
 {
-  desktop->handleClipboardData(data);
+  desktop->handleClipboardData(format, data, length);
 }
 
 

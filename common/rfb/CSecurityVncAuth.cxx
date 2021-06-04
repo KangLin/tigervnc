@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include <rfb/CConnection.h>
 #include <rfb/Password.h>
@@ -39,6 +40,10 @@ extern "C" {
 using namespace rfb;
 
 static const int vncAuthChallengeSize = 16;
+CSecurityVncAuth::CSecurityVncAuth(CConnection* cc, UserPasswdGetter* upg)
+    : CSecurity(cc),
+    upg(upg)
+{}
 
 bool CSecurityVncAuth::processMsg()
 {
@@ -52,7 +57,9 @@ bool CSecurityVncAuth::processMsg()
   rdr::U8 challenge[vncAuthChallengeSize];
   is->readBytes(challenge, vncAuthChallengeSize);
   PlainPasswd passwd;
-  (CSecurity::upg)->getUserPasswd(cc->isSecure(), 0, &passwd.buf);
+  
+  assert(upg != NULL); /* (upg == NULL) means bug in the viewer, please call SecurityClient::setUserPasswdGetter */
+  upg->getUserPasswd(cc->isSecure(), 0, &passwd.buf);
 
   // Calculate the correct response
   rdr::U8 key[8];

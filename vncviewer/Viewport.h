@@ -24,9 +24,9 @@
 
 #include <rfb/Rect.h>
 
-#include <FL/Fl_Widget.H>
-
 #include "EmulateMB.h"
+
+#include <FL/Fl_Widget.H>
 
 class Fl_Menu_Button;
 class Fl_RGB_Image;
@@ -59,7 +59,7 @@ public:
   // Clipboard events
   void handleClipboardRequest();
   void handleClipboardAnnounce(bool available);
-  void handleClipboardData(const char* data);
+  void handleClipboardData(unsigned int format, const char* data, size_t length);
 
   // Fl_Widget callback methods
 

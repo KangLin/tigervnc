@@ -36,7 +36,6 @@
 using namespace rdr;
 using namespace rfb;
 
-UserPasswdGetter *CSecurity::upg = NULL;
 #ifdef HAVE_GNUTLS
 UserMsgBox *CSecurityTLS::msg = NULL;
 #endif
@@ -57,53 +56,53 @@ ConfViewer);
 
 CSecurity* SecurityClient::GetCSecurity(CConnection* cc, U32 secType)
 {
-  assert (CSecurity::upg != NULL); /* (upg == NULL) means bug in the viewer */
+    assert(upg != NULL); /* (upg == NULL) means bug in the viewer, please call CConnect::security::setUserPasswdGetter */
 #ifdef HAVE_GNUTLS
-  assert (CSecurityTLS::msg != NULL);
+    assert (CSecurityTLS::msg != NULL);
 #endif
-
-  if (!IsSupported(secType))
-    goto bail;
-
-  switch (secType) {
-  case secTypeNone: return new CSecurityNone(cc);
-  case secTypeVncAuth: return new CSecurityVncAuth(cc);
-  case secTypeVeNCrypt: return new CSecurityVeNCrypt(cc, this);
-  case secTypePlain: return new CSecurityPlain(cc);
+    
+    if (!IsSupported(secType))
+        goto bail;
+    
+    switch (secType) {
+    case secTypeNone: return new CSecurityNone(cc);
+    case secTypeVncAuth: return new CSecurityVncAuth(cc, upg);
+    case secTypeVeNCrypt: return new CSecurityVeNCrypt(cc, this);
+    case secTypePlain: return new CSecurityPlain(cc, upg);
 #ifdef HAVE_GNUTLS
-  case secTypeTLSNone:
-    return new CSecurityStack(cc, secTypeTLSNone,
-                              "TLS with no password",
-                              new CSecurityTLS(cc, true));
-  case secTypeTLSVnc:
-    return new CSecurityStack(cc, secTypeTLSVnc,
-                              "TLS with VNCAuth",
-                              new CSecurityTLS(cc, true),
-                              new CSecurityVncAuth(cc));
-  case secTypeTLSPlain:
-    return new CSecurityStack(cc, secTypeTLSPlain,
-                              "TLS with Username/Password",
-                              new CSecurityTLS(cc, true),
-                              new CSecurityPlain(cc));
-  case secTypeX509None:
-    return new CSecurityStack(cc, secTypeX509None,
-                              "X509 with no password",
-                              new CSecurityTLS(cc, false));
-  case secTypeX509Vnc:
-    return new CSecurityStack(cc, secTypeX509Vnc,
-                              "X509 with VNCAuth",
-                              new CSecurityTLS(cc, false),
-                              new CSecurityVncAuth(cc));
-  case secTypeX509Plain:
-    return new CSecurityStack(cc, secTypeX509Plain,
-                              "X509 with Username/Password",
-                              new CSecurityTLS(cc, false),
-                              new CSecurityPlain(cc));
+    case secTypeTLSNone:
+        return new CSecurityStack(cc, secTypeTLSNone,
+                                  "TLS with no password",
+                                  new CSecurityTLS(cc, true));
+    case secTypeTLSVnc:
+        return new CSecurityStack(cc, secTypeTLSVnc,
+                                  "TLS with VNCAuth",
+                                  new CSecurityTLS(cc, true),
+                                  new CSecurityVncAuth(cc, upg));
+    case secTypeTLSPlain:
+        return new CSecurityStack(cc, secTypeTLSPlain,
+                                  "TLS with Username/Password",
+                                  new CSecurityTLS(cc, true),
+                                  new CSecurityPlain(cc, upg));
+    case secTypeX509None:
+        return new CSecurityStack(cc, secTypeX509None,
+                                  "X509 with no password",
+                                  new CSecurityTLS(cc, false));
+    case secTypeX509Vnc:
+        return new CSecurityStack(cc, secTypeX509Vnc,
+                                  "X509 with VNCAuth",
+                                  new CSecurityTLS(cc, false),
+                                  new CSecurityVncAuth(cc, upg));
+    case secTypeX509Plain:
+        return new CSecurityStack(cc, secTypeX509Plain,
+                                  "X509 with Username/Password",
+                                  new CSecurityTLS(cc, false),
+                                  new CSecurityPlain(cc, upg));
 #endif
-  }
-
+    }
+    
 bail:
-  throw Exception("Security type not supported");
+    throw Exception("Security type not supported");
 }
 
 void SecurityClient::setDefaults()
