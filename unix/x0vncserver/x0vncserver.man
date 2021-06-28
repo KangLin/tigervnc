@@ -47,6 +47,11 @@ arbitrary.
 .SH PARAMETERS
 
 .TP
+.B \-desktop \fIdesktop-name\fP
+Each desktop has a name which may be displayed by the viewer. It defaults to
+"<user>@<hostname>".
+.
+.TP
 .B \-display \fIdisplay\fP
 The X display name.  If not specified, it defaults to the value of the
 DISPLAY environment variable.
@@ -297,14 +302,6 @@ Terminate when a client has been connected for \fIN\fP seconds.  Default is
 .TP
 .B \-MaxIdleTime \fIseconds\fP
 Terminate after \fIN\fP seconds of user inactivity.  Default is 0.
-.
-.TP
-.B \-AcceptCutText
-.TQ
-.B \-SendCutText
-.TQ
-.B \-MaxCutText
-Currently unused.
 
 .SH SEE ALSO
 .BR Xvnc (1),

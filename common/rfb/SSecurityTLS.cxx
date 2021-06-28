@@ -2,6 +2,7 @@
  * Copyright (C) 2004 Red Hat Inc.
  * Copyright (C) 2005 Martin Koegler
  * Copyright (C) 2010 TigerVNC Team
+ * Copyright (C) 2012-2021 Pierre Ossman for Cendio AB
  *    
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +38,23 @@
 #include <rdr/TLSOutStream.h>
 #include <gnutls/x509.h>
 
-#define DH_BITS 1024 /* XXX This should be configurable! */
+#if defined (SSECURITYTLS__USE_DEPRECATED_DH)
+/* FFDHE (RFC-7919) 2048-bit parameters, PEM-encoded */
+static unsigned char ffdhe2048[] =
+  "-----BEGIN DH PARAMETERS-----\n"
+  "MIIBDAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz\n"
+  "+8yTnc4kmz75fS/jY2MMddj2gbICrsRhetPfHtXV/WVhJDP1H18GbtCFY2VVPe0a\n"
+  "87VXE15/V8k1mE8McODmi3fipona8+/och3xWKE2rec1MKzKT0g6eXq8CrGCsyT7\n"
+  "YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi\n"
+  "7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD\n"
+  "ssbzSibBsu/6iGtCOGEoXJf//////////wIBAgICAOE=\n"
+  "-----END DH PARAMETERS-----\n";
+
+static const gnutls_datum_t ffdhe_pkcs3_param = {
+  ffdhe2048,
+  sizeof(ffdhe2048)
+};
+#endif
 
 using namespace rfb;
 
@@ -50,10 +67,14 @@ StringParameter SSecurityTLS::X509_KeyFile
 static LogWriter vlog("TLS");
 
 SSecurityTLS::SSecurityTLS(SConnection* sc, bool _anon)
-  : SSecurity(sc), session(NULL), dh_params(NULL), anon_cred(NULL),
+  : SSecurity(sc), session(NULL), anon_cred(NULL),
     cert_cred(NULL), anon(_anon), tlsis(NULL), tlsos(NULL),
     rawis(NULL), rawos(NULL)
 {
+#if defined (SSECURITYTLS__USE_DEPRECATED_DH)
+  dh_params = NULL;
+#endif
+
   certfile = X509_CertFile.getData();
   keyfile = X509_KeyFile.getData();
 
@@ -64,16 +85,20 @@ SSecurityTLS::SSecurityTLS(SConnection* sc, bool _anon)
 void SSecurityTLS::shutdown()
 {
   if (session) {
-    if (gnutls_bye(session, GNUTLS_SHUT_RDWR) != GNUTLS_E_SUCCESS) {
-      /* FIXME: Treat as non-fatal error */
-      vlog.error("TLS session wasn't terminated gracefully");
-    }
+    int ret;
+    // FIXME: We can't currently wait for the response, so we only send
+    //        our close and hope for the best
+    ret = gnutls_bye(session, GNUTLS_SHUT_WR);
+    if ((ret != GNUTLS_E_SUCCESS) && (ret != GNUTLS_E_INVALID_SESSION))
+      vlog.error("TLS shutdown failed: %s", gnutls_strerror(ret));
   }
 
+#if defined (SSECURITYTLS__USE_DEPRECATED_DH)
   if (dh_params) {
     gnutls_dh_params_deinit(dh_params);
     dh_params = 0;
   }
+#endif
 
   if (anon_cred) {
     gnutls_anon_free_server_credentials(anon_cred);
@@ -198,17 +223,21 @@ void SSecurityTLS::setParams(gnutls_session_t session)
     throw AuthFailureException("gnutls_set_priority_direct failed");
   }
 
+#if defined (SSECURITYTLS__USE_DEPRECATED_DH)
   if (gnutls_dh_params_init(&dh_params) != GNUTLS_E_SUCCESS)
     throw AuthFailureException("gnutls_dh_params_init failed");
 
-  if (gnutls_dh_params_generate2(dh_params, DH_BITS) != GNUTLS_E_SUCCESS)
-    throw AuthFailureException("gnutls_dh_params_generate2 failed");
+  if (gnutls_dh_params_import_pkcs3(dh_params, &ffdhe_pkcs3_param, GNUTLS_X509_FMT_PEM) != GNUTLS_E_SUCCESS)
+    throw AuthFailureException("gnutls_dh_params_import_pkcs3 failed");
+#endif
 
   if (anon) {
     if (gnutls_anon_allocate_server_credentials(&anon_cred) != GNUTLS_E_SUCCESS)
       throw AuthFailureException("gnutls_anon_allocate_server_credentials failed");
 
+#if defined (SSECURITYTLS__USE_DEPRECATED_DH)
     gnutls_anon_set_server_dh_params(anon_cred, dh_params);
+#endif
 
     if (gnutls_credentials_set(session, GNUTLS_CRD_ANON, anon_cred)
         != GNUTLS_E_SUCCESS)
@@ -220,7 +249,9 @@ void SSecurityTLS::setParams(gnutls_session_t session)
     if (gnutls_certificate_allocate_credentials(&cert_cred) != GNUTLS_E_SUCCESS)
       throw AuthFailureException("gnutls_certificate_allocate_credentials failed");
 
+#if defined (SSECURITYTLS__USE_DEPRECATED_DH)
     gnutls_certificate_set_dh_params(cert_cred, dh_params);
+#endif
 
     switch (gnutls_certificate_set_x509_key_file(cert_cred, certfile, keyfile, GNUTLS_X509_FMT_PEM)) {
     case GNUTLS_E_SUCCESS:

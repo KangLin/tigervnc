@@ -3,6 +3,7 @@
  * Copyright (C) 2005 Martin Koegler
  * Copyright (C) 2010 TigerVNC Team
  * Copyright (C) 2010 m-privacy GmbH
+ * Copyright (C) 2012-2021 Pierre Ossman for Cendio AB
  *    
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,10 +62,31 @@
 
 using namespace rfb;
 
-StringParameter CSecurityTLS::X509CA("X509CA", "X509 CA certificate", "", ConfViewer);
-StringParameter CSecurityTLS::X509CRL("X509CRL", "X509 CRL file", "", ConfViewer);
+static const char* homedirfn(const char* fn);
+
+StringParameter CSecurityTLS::X509CA("X509CA", "X509 CA certificate",
+                                     homedirfn("x509_ca.pem"),
+                                     ConfViewer);
+StringParameter CSecurityTLS::X509CRL("X509CRL", "X509 CRL file",
+                                     homedirfn("x509_crl.pem"),
+                                     ConfViewer);
 
 static LogWriter vlog("TLS");
+
+static const char* homedirfn(const char* fn)
+{
+  static char full_path[PATH_MAX];
+  char* homedir = NULL;
+
+  if (getvnchomedir(&homedir) == -1)
+    return "";
+
+  snprintf(full_path, sizeof(full_path), "%s%s", homedir, fn);
+
+  delete [] homedir;
+
+  return full_path;
+}
 
 CSecurityTLS::CSecurityTLS(CConnection* cc, bool _anon)
   : CSecurity(cc), session(NULL), anon_cred(NULL), cert_cred(NULL),
@@ -77,33 +99,16 @@ CSecurityTLS::CSecurityTLS(CConnection* cc, bool _anon)
     throw AuthFailureException("gnutls_global_init failed");
 }
 
-void CSecurityTLS::setDefaults()
+void CSecurityTLS::shutdown()
 {
-  char* homeDir = NULL;
-
-  if (getvnchomedir(&homeDir) == -1) {
-    vlog.error("Could not obtain VNC home directory path");
-    return;
+  if (session) {
+    int ret;
+    // FIXME: We can't currently wait for the response, so we only send
+    //        our close and hope for the best
+    ret = gnutls_bye(session, GNUTLS_SHUT_WR);
+    if ((ret != GNUTLS_E_SUCCESS) && (ret != GNUTLS_E_INVALID_SESSION))
+      vlog.error("TLS shutdown failed: %s", gnutls_strerror(ret));
   }
-
-  int len = strlen(homeDir) + 1;
-  CharArray caDefault(len + 11);
-  CharArray crlDefault(len + 12);
-  sprintf(caDefault.buf, "%sx509_ca.pem", homeDir);
-  sprintf(crlDefault.buf, "%s509_crl.pem", homeDir);
-  delete [] homeDir;
-
- if (!fileexists(caDefault.buf))
-   X509CA.setDefaultStr(caDefault.buf);
- if (!fileexists(crlDefault.buf))
-   X509CRL.setDefaultStr(crlDefault.buf);
-}
-
-void CSecurityTLS::shutdown(bool needbye)
-{
-  if (session && needbye)
-    if (gnutls_bye(session, GNUTLS_SHUT_RDWR) != GNUTLS_E_SUCCESS)
-      vlog.error("gnutls_bye failed");
 
   if (anon_cred) {
     gnutls_anon_free_client_credentials(anon_cred);
@@ -139,7 +144,7 @@ void CSecurityTLS::shutdown(bool needbye)
 
 CSecurityTLS::~CSecurityTLS()
 {
-  shutdown(true);
+  shutdown();
 
   delete[] cafile;
   delete[] crlfile;
@@ -186,7 +191,7 @@ bool CSecurityTLS::processMsg()
     }
 
     vlog.error("TLS Handshake failed: %s\n", gnutls_strerror (err));
-    shutdown(false);
+    shutdown();
     throw AuthFailureException("TLS Handshake failed");
   }
 

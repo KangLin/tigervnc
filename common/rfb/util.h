@@ -56,6 +56,7 @@ namespace rfb {
     CharArray(char* str) : buf(str) {} // note: assumes ownership
     CharArray(size_t len) {
       buf = new char[len]();
+      memset(buf, 0, len);
     }
     ~CharArray() {
       delete [] buf;

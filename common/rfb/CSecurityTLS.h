@@ -48,14 +48,13 @@ namespace rfb {
     virtual const char* description() const
       { return anon ? "TLS Encryption without VncAuth" : "X509 Encryption without VncAuth"; }
     virtual bool isSecure() const { return !anon; }
-    static void setDefaults();
 
     static StringParameter X509CA;
     static StringParameter X509CRL;
     static UserMsgBox *msg;
 
   protected:
-    void shutdown(bool needbye);
+    void shutdown();
     void freeResources();
     void setParam();
     void checkSession();
