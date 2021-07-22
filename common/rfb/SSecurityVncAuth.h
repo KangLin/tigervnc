@@ -41,7 +41,7 @@ namespace rfb {
     virtual ~VncAuthPasswdGetter() { }
   };
 
-  class VncAuthPasswdParameter : public VncAuthPasswdGetter, BinaryParameter {
+  class VncAuthPasswdParameter : public VncAuthPasswdGetter, public BinaryParameter {
   public:
     VncAuthPasswdParameter(const char* name, const char* desc, StringParameter* passwdFile_);
     virtual void getVncAuthPasswd(PlainPasswd *password, PlainPasswd *readOnlyPassword);
