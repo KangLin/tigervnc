@@ -36,13 +36,13 @@
 #include "scrnintstr.h"
 #include "mi.h"
 
-#include "Input.h"
+#include "vncInput.h"
 
 #ifndef KEYBOARD_OR_FLOAT
 #define KEYBOARD_OR_FLOAT MASTER_KEYBOARD
 #endif
 
-#if XORG < 118
+#if XORG_OLDER_THAN(1, 18, 0)
 #define GetMaster(dev, type) ((dev)->master)
 #endif
 

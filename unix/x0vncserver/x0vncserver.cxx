@@ -68,32 +68,31 @@ StringParameter hostsFile("HostsFile", "File with IP access control rules", "");
 BoolParameter localhostOnly("localhost",
                             "Only allow connections from localhost",
                             false);
+StringParameter interface("interface",
+                          "listen on the specified network address",
+                          "all");
 
 static const char* defaultDesktopName()
 {
-  static char* name = NULL;
-
-  char hostname[HOST_NAME_MAX + 1];
-  struct passwd* pwent;
-
-  size_t len;
-
-  delete [] name;
-
-  if (gethostname(hostname, sizeof(hostname)) == -1)
+  size_t host_max = sysconf(_SC_HOST_NAME_MAX);
+  if (host_max < 0)
     return "";
 
-  pwent = getpwuid(getuid());
+  std::vector<char> hostname(host_max + 1);
+  if (gethostname(hostname.data(), hostname.size()) == -1)
+    return "";
+
+  struct passwd* pwent = getpwuid(getuid());
   if (pwent == NULL)
     return "";
 
-  len = snprintf(NULL, 0, "%s@%s", pwent->pw_name, hostname);
+  size_t len = snprintf(NULL, 0, "%s@%s", pwent->pw_name, hostname.data());
   if (len < 0)
     return "";
 
-  name = new char[len + 1];
+  char* name = new char[len + 1];
 
-  snprintf(name, len + 1, "%s@%s", pwent->pw_name, hostname);
+  snprintf(name, len + 1, "%s@%s", pwent->pw_name, hostname.data());
 
   return name;
 }
@@ -304,11 +303,16 @@ int main(int argc, char** argv)
     }
 
     if ((int)rfbport != -1) {
+      const char *addr = interface;
+      if (strcasecmp(addr, "all") == 0)
+        addr = 0;
       if (localhostOnly)
         createLocalTcpListeners(&listeners, (int)rfbport);
       else
-        createTcpListeners(&listeners, 0, (int)rfbport);
-      vlog.info("Listening on port %d", (int)rfbport);
+        createTcpListeners(&listeners, addr, (int)rfbport);
+      vlog.info("Listening for VNC connections on %s interface(s), port %d",
+                localhostOnly ? "local" : (const char*)interface,
+                (int)rfbport);
     }
 
     const char *hostsData = hostsFile.getData();

@@ -3,21 +3,23 @@ include_directories(${GETTEXT_INCLUDE_DIR})
 
 include_directories(${CMAKE_SOURCE_DIR}/common)
 set(VNCVIEWER_SOURCES
-    menukey.cxx
-    BaseTouchHandler.cxx
-    CConn.cxx
-    DesktopWindow.cxx
-    EmulateMB.cxx
-    UserDialog.cxx
-    ServerDialog.cxx
-    Surface.cxx
-    OptionsDialog.cxx
-    PlatformPixelBuffer.cxx
-    Viewport.cxx
-    parameters.cxx
-    keysym2ucs.c
-    touch.cxx
-    vncviewer.cxx)
+  menukey.cxx
+  BaseTouchHandler.cxx
+  CConn.cxx
+  DesktopWindow.cxx
+  EmulateMB.cxx
+  UserDialog.cxx
+  ServerDialog.cxx
+  Surface.cxx
+  OptionsDialog.cxx
+  PlatformPixelBuffer.cxx
+  Viewport.cxx
+  parameters.cxx
+  keysym2ucs.c
+  touch.cxx
+  MonitorArrangement.cxx
+  MonitorIndicesParameter.cxx
+  vncviewer.cxx)
 
 if(WIN32)
     # Since vncviewer.rc is generated, local includes will be looking
@@ -60,7 +62,12 @@ elseif(APPLE)
     target_link_libraries(vncviewer "-framework Carbon")
     target_link_libraries(vncviewer "-framework IOKit")
 else()
-    target_link_libraries(vncviewer ${X11_Xi_LIB})
+  target_link_libraries(vncviewer ${X11_Xi_LIB})
+
+  if(X11_Xrandr_LIB)
+    add_definitions(-DHAVE_XRANDR)
+    target_link_libraries(vncviewer ${X11_Xrandr_LIB})
+  endif()
 endif()
 
 install(TARGETS vncviewer DESTINATION ${CMAKE_INSTALL_FULL_BINDIR})

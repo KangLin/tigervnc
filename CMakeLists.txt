@@ -235,32 +235,46 @@ if(BUILD_JAVA)
     add_subdirectory(java)
 endif()
 
-# Check for FLTK
-set(FLTK_SKIP_FLUID TRUE)
-set(FLTK_SKIP_OPENGL TRUE)
-set(FLTK_SKIP_FORMS TRUE)
-find_package(FLTK)
+option(BUILD_VIEWER "Build TigerVNC viewer" ON)
+if(BUILD_VIEWER)
+	# Check for FLTK
+	set(FLTK_SKIP_FLUID TRUE)
+	set(FLTK_SKIP_OPENGL TRUE)
+	set(FLTK_SKIP_FORMS TRUE)
+	find_package(FLTK REQUIRED)
 
-if(UNIX AND NOT APPLE)
-    # No proper handling for extra X11 libs that FLTK might need...
-    if(X11_Xft_FOUND)
-        # Xft headers include references to fontconfig, so we need
-        # to link to that as well
-        find_library(FONTCONFIG_LIB fontconfig)
-        set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xft_LIB} ${FONTCONFIG_LIB})
-    endif()
-    if(X11_Xinerama_FOUND)
-        set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xinerama_LIB})
-    endif()
-    if(X11_Xfixes_FOUND)
-        set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xfixes_LIB})
-    endif()
-    if(X11_Xcursor_FOUND)
-        set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xcursor_LIB})
-    endif()
-    if(X11_Xrender_FOUND)
-        set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xrender_LIB})
-    endif()
+	if(UNIX AND NOT APPLE)
+	  # No proper handling for extra X11 libs that FLTK might need...
+	  if(X11_Xft_FOUND)
+	    # Xft headers include references to fontconfig, so we need
+	    # to link to that as well
+	    find_library(FONTCONFIG_LIB fontconfig)
+	    set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xft_LIB} ${FONTCONFIG_LIB})
+	  endif()
+	  if(X11_Xinerama_FOUND)
+	    set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xinerama_LIB})
+	  endif()
+	  if(X11_Xfixes_FOUND)
+	    set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xfixes_LIB})
+	  endif()
+	  if(X11_Xcursor_FOUND)
+	    set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xcursor_LIB})
+	  endif()
+	  if(X11_Xrender_FOUND)
+	    set(FLTK_LIBRARIES ${FLTK_LIBRARIES} ${X11_Xrender_LIB})
+	  endif()
+	endif()
+endif()
+
+# Check for GNUTLS library
+option(ENABLE_GNUTLS "Enable protocol encryption and advanced authentication" ON)
+if(ENABLE_GNUTLS)
+  find_package(GnuTLS)
+  if (GNUTLS_FOUND)
+    include_directories(${GNUTLS_INCLUDE_DIR})
+    add_definitions("-DHAVE_GNUTLS")
+    add_definitions(${GNUTLS_DEFINITIONS})
+  endif()
 endif()
 
 # Check for PAM library
@@ -298,7 +312,6 @@ if(ENABLE_NLS)
     add_subdirectory(po)
 endif()
 
-option(BUILD_VIEWER "Build TigerVNC viewer" ON)
 if(BUILD_VIEWER)
     if(FLTK_FOUND)
         add_subdirectory(vncviewer)
@@ -314,7 +327,9 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(release)
+if(BUILD_VIEWER)
+  add_subdirectory(release)
+endif()
 
 add_custom_target(install-runtime
     COMMAND

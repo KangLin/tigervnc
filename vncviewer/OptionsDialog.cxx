@@ -38,6 +38,7 @@
 #include "i18n.h"
 #include "menukey.h"
 #include "parameters.h"
+#include "MonitorArrangement.h"
 
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Button.H>
@@ -297,12 +298,23 @@ void OptionsDialog::loadOptions(void)
   }
   remoteResizeCheckbox->value(remoteResize);
   fullScreenCheckbox->value(fullScreen);
-  fullScreenAllMonitorsCheckbox->value(fullScreenAllMonitors);
+
+  if (!strcasecmp(fullScreenMode, "all")) {
+    allMonitorsButton->setonly();
+  } else if (!strcasecmp(fullScreenMode, "selected")) {
+    selectedMonitorsButton->setonly();
+  } else {
+    currentMonitorButton->setonly();
+  }
+
+  monitorArrangement->set(fullScreenSelectedMonitors.getParam());
 
   handleDesktopSize(desktopSizeCheckbox, this);
+  handleFullScreenMode(selectedMonitorsButton, this);
 
   /* Misc. */
   sharedCheckbox->value(shared);
+  reconnectCheckbox->value(reconnectOnError);
   dotCursorCheckbox->value(dotWhenNoCursor);
 }
 
@@ -407,10 +419,20 @@ void OptionsDialog::storeOptions(void)
   }
   remoteResize.setParam(remoteResizeCheckbox->value());
   fullScreen.setParam(fullScreenCheckbox->value());
-  fullScreenAllMonitors.setParam(fullScreenAllMonitorsCheckbox->value());
+
+  if (allMonitorsButton->value()) {
+    fullScreenMode.setParam("All");
+  } else if (selectedMonitorsButton->value()) {
+    fullScreenMode.setParam("Selected");
+  } else {
+    fullScreenMode.setParam("Current");
+  }
+
+  fullScreenSelectedMonitors.setParam(monitorArrangement->get());
 
   /* Misc. */
   shared.setParam(sharedCheckbox->value());
+  reconnectOnError.setParam(reconnectCheckbox->value());
   dotWhenNoCursor.setParam(dotCursorCheckbox->value());
 
   std::map<OptionsCallback*, void*>::const_iterator iter;
@@ -755,6 +777,7 @@ void OptionsDialog::createInputPage(int tx, int ty, int tw, int th)
 void OptionsDialog::createScreenPage(int tx, int ty, int tw, int th)
 {
   int x;
+  int width, height;
 
   Fl_Group *group = new Fl_Group(tx, ty, tw, th, _("Screen"));
 
@@ -783,15 +806,58 @@ void OptionsDialog::createScreenPage(int tx, int ty, int tw, int th)
   fullScreenCheckbox = new Fl_Check_Button(LBLRIGHT(tx, ty,
                                                   CHECK_MIN_WIDTH,
                                                   CHECK_HEIGHT,
-                                                  _("Full-screen mode")));
-  ty += CHECK_HEIGHT + TIGHT_MARGIN;
+                                                  _("Enable full-screen")));
+  ty += CHECK_HEIGHT + INNER_MARGIN;
 
-  fullScreenAllMonitorsCheckbox = new Fl_Check_Button(LBLRIGHT(tx + INDENT, ty,
-                                                      CHECK_MIN_WIDTH,
-                                                      CHECK_HEIGHT,
-                                                      _("Enable full-screen mode over all monitors")));
-  ty += CHECK_HEIGHT + TIGHT_MARGIN;
+  width = tw - OUTER_MARGIN * 2;
+  height = th - ty + OUTER_MARGIN * 3;
+    Fl_Group *fullScreenModeGroup = new Fl_Group(tx,
+                                     ty,
+                                     width,
+                                     height);
 
+  {
+    tx += INDENT;
+
+    currentMonitorButton = new Fl_Round_Button(LBLRIGHT(tx, ty,
+                                                        RADIO_MIN_WIDTH,
+                                                        RADIO_HEIGHT,
+                                                        _("Use current monitor")));
+    currentMonitorButton->type(FL_RADIO_BUTTON);
+    currentMonitorButton->callback(handleFullScreenMode, this);
+    ty += RADIO_HEIGHT + TIGHT_MARGIN;
+
+    allMonitorsButton = new Fl_Round_Button(LBLRIGHT(tx, ty,
+                                            RADIO_MIN_WIDTH,
+                                            RADIO_HEIGHT,
+                                            _("Use all monitors")));
+    allMonitorsButton->type(FL_RADIO_BUTTON);
+    allMonitorsButton->callback(handleFullScreenMode, this);
+    ty += RADIO_HEIGHT + TIGHT_MARGIN;
+
+    selectedMonitorsButton = new Fl_Round_Button(LBLRIGHT(tx, ty,
+                                                 RADIO_MIN_WIDTH,
+                                                 RADIO_HEIGHT,
+                                                 _("Use selected monitor(s)")));
+    selectedMonitorsButton->type(FL_RADIO_BUTTON);
+    selectedMonitorsButton->callback(handleFullScreenMode, this);
+    ty += RADIO_HEIGHT + TIGHT_MARGIN;
+
+    int full_width = tw - OUTER_MARGIN * 2;
+    int margin_width = full_width - INDENT - INNER_MARGIN*2;
+    int full_height = th;
+    int margin_height = full_height - ty + INNER_MARGIN*3;
+
+    monitorArrangement = new MonitorArrangement(
+                              tx + INDENT,
+                              ty,
+                              margin_width,
+                              margin_height);
+
+    ty += CHECK_HEIGHT + margin_height;
+  }
+
+  fullScreenModeGroup->end();
   group->end();
 }
 
@@ -807,6 +873,12 @@ void OptionsDialog::createMiscPage(int tx, int ty, int tw, int th)
                                                   CHECK_MIN_WIDTH,
                                                   CHECK_HEIGHT,
                                                   _("Shared (don't disconnect other viewers)")));
+  ty += CHECK_HEIGHT + TIGHT_MARGIN;
+
+  reconnectCheckbox = new Fl_Check_Button(LBLRIGHT(tx, ty,
+                                                  CHECK_MIN_WIDTH,
+                                                  CHECK_HEIGHT,
+                                                  _("Ask to reconnect on connection errors")));
   ty += CHECK_HEIGHT + TIGHT_MARGIN;
 
   dotCursorCheckbox = new Fl_Check_Button(LBLRIGHT(tx, ty,
@@ -900,6 +972,17 @@ void OptionsDialog::handleClipboard(Fl_Widget *widget, void *data)
   else
     dialog->sendPrimaryCheckbox->deactivate();
 #endif
+}
+
+void OptionsDialog::handleFullScreenMode(Fl_Widget *widget, void *data)
+{
+  OptionsDialog *dialog = (OptionsDialog*)data;
+
+  if (dialog->selectedMonitorsButton->value()) {
+    dialog->monitorArrangement->activate();
+  } else {
+    dialog->monitorArrangement->deactivate();
+  }
 }
 
 void OptionsDialog::handleCancel(Fl_Widget *widget, void *data)
