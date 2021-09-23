@@ -17,7 +17,7 @@ add_subdirectory(network)
 
 add_library(${PROJECT_NAME} ${TIGERVNC_SOURCES} ${TIGERVNC_HEADS})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ${TIGERVNC_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${TIGERVNC_LIBS})
 
 # See: http://www.it1352.com/478094.html
 target_include_directories(${PROJECT_NAME}
@@ -45,7 +45,7 @@ endif()
 #Install target
 if(WIN32)
     INSTALL(TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}Config
+        EXPORT ${PROJECT_NAME}Targets
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
             COMPONENT Runtime
         LIBRARY DESTINATION "${CMAKE_INSTALL_BINDIR}"
@@ -56,7 +56,7 @@ if(WIN32)
         )
 else()
     INSTALL(TARGETS ${PROJECT_NAME}
-        EXPORT ${PROJECT_NAME}Config
+        EXPORT ${PROJECT_NAME}Targets
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
             COMPONENT Runtime
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
@@ -71,15 +71,26 @@ export(TARGETS ${PROJECT_NAME}
     APPEND FILE ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake
     )
 # Install cmake configure files
-install(EXPORT ${PROJECT_NAME}Config
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
+install(EXPORT ${PROJECT_NAME}Targets
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
     )
+configure_package_config_file(
+    ${CMAKE_SOURCE_DIR}/cmake/Modules/${PROJECT_NAME}Config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake.in
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+    )
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake.in
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+    RENAME ${PROJECT_NAME}-config.cmake
+    )
+
 write_basic_package_version_file(
     "${CMAKE_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
     VERSION ${VERSION}
     COMPATIBILITY AnyNewerVersion)
 install(FILES "${CMAKE_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake")
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
 if(UNIX)
     libtool_create_control_file(${PROJECT_NAME})
