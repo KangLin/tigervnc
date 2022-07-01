@@ -42,6 +42,10 @@
 #define mkdir(path, mode) _mkdir(path)
 #endif
 
+#ifdef __APPLE__
+#include <Carbon/Carbon.h>
+#endif
+
 #if !defined(WIN32) && !defined(__APPLE__)
 #include <X11/Xlib.h>
 #include <X11/XKBlib.h>
@@ -78,7 +82,7 @@
 #include "win32.h"
 #endif
 
-rfb::LogWriter vlog("main");
+static rfb::LogWriter vlog("main");
 
 using namespace network;
 using namespace rfb;
@@ -101,12 +105,11 @@ static const char *about_text()
   // encodings, so we need to make sure we get a fresh string every
   // time.
   snprintf(buffer, sizeof(buffer),
-           _("TigerVNC Viewer %d-bit v%s\n"
+           _("TigerVNC Viewer v%s\n"
              "Built on: %s\n"
              "Copyright (C) 1999-%d TigerVNC Team and many others (see README.rst)\n"
              "See https://www.tigervnc.org for information on TigerVNC."),
-           (int)sizeof(size_t)*8, PACKAGE_VERSION,
-           BUILD_TIMESTAMP, 2021);
+           PACKAGE_VERSION, BUILD_TIMESTAMP, 2022);
 
   return buffer;
 }
@@ -155,6 +158,11 @@ void abort_connection(const char *error, ...)
   exitMainloop = true;
 }
 
+void abort_connection_with_unexpected_error(const rdr::Exception &e) {
+  abort_connection(_("An unexpected error occurred when communicating "
+                     "with the server:\n\n%s"), e.str());
+}
+
 void disconnect()
 {
   exitMainloop = true;
@@ -171,7 +179,7 @@ void about_vncviewer()
   fl_message("%s", about_text());
 }
 
-static void mainloop(const char* vncserver, network::Socket* sock, UserDialog* pUserDialog)
+static void mainloop(const char* vncserver, network::Socket* sock)
 {
   while (true) {
     CConn *cc;
@@ -209,10 +217,10 @@ static void mainloop(const char* vncserver, network::Socket* sock, UserDialog* p
       int ret;
       ret = fl_choice(_("%s\n\n"
                         "Attempt to reconnect?"),
-                      fl_yes, fl_no, 0, exitError);
+                      NULL, fl_yes, fl_no, exitError);
       free(exitError);
       exitError = NULL;
-      if (ret == 0)
+      if (ret == 1)
         continue;
       else
         break;
@@ -263,6 +271,57 @@ static void CleanupSignalHandler(int sig)
   exit(1);
 }
 
+static const char* getlocaledir()
+{
+#if defined(WIN32)
+  static char localebuf[PATH_MAX];
+  char *slash;
+
+  GetModuleFileName(NULL, localebuf, sizeof(localebuf));
+
+  slash = strrchr(localebuf, '\\');
+  if (slash == NULL)
+    return NULL;
+
+  *slash = '\0';
+
+  if ((strlen(localebuf) + strlen("\\locale")) >= sizeof(localebuf))
+    return NULL;
+
+  strcat(localebuf, "\\locale");
+
+  return localebuf;
+#elif defined(__APPLE__)
+  CFBundleRef bundle;
+  CFURLRef localeurl;
+  CFStringRef localestr;
+  Boolean ret;
+
+  static char localebuf[PATH_MAX];
+
+  bundle = CFBundleGetMainBundle();
+  if (bundle == NULL)
+    return NULL;
+
+  localeurl = CFBundleCopyResourceURL(bundle, CFSTR("locale"),
+                                      NULL, NULL);
+  if (localeurl == NULL)
+    return NULL;
+
+  localestr = CFURLCopyFileSystemPath(localeurl, kCFURLPOSIXPathStyle);
+
+  CFRelease(localeurl);
+
+  ret = CFStringGetCString(localestr, localebuf, sizeof(localebuf),
+                           kCFStringEncodingUTF8);
+  if (!ret)
+    return NULL;
+
+  return localebuf;
+#else
+  return CMAKE_INSTALL_FULL_LOCALEDIR;
+#endif
+}
 static void init_fltk()
 {
   // Basic text size (10pt @ 96 dpi => 13px)
@@ -297,9 +356,9 @@ static void init_fltk()
 
   Fl_Window::default_icons(lg, sm);
 #elif ! defined(__APPLE__)
-  const int icon_sizes[] = {48, 32, 24, 16};
+  const int icon_sizes[] = {128, 64, 48, 32, 24, 22, 16};
 
-  Fl_PNG_Image *icons[4];
+  Fl_PNG_Image *icons[sizeof(icon_sizes)/sizeof(icon_sizes[0])];
   int count;
 
   count = 0;
@@ -404,12 +463,11 @@ static void mkvnchomedir()
   char* homeDir = NULL;
 
   if (getvnchomedir(&homeDir) == -1) {
-    vlog.error(_("Could not create VNC home directory: can't obtain home "
-                 "directory path."));
+    vlog.error(_("Could not obtain the home directory path"));
   } else {
     int result = mkdir(homeDir, 0755);
     if (result == -1 && errno != EEXIST)
-      vlog.error(_("Could not create VNC home directory: %s."), strerror(errno));
+      vlog.error(_("Could not create VNC home directory: %s"), strerror(errno));
     delete [] homeDir;
   }
 }
@@ -500,8 +558,8 @@ potentiallyLoadConfigurationFile(char *vncServerName)
       vncServerName[VNCSERVERNAMELEN-1] = '\0';
     } catch (rfb::Exception& e) {
       vlog.error("%s", e.str());
-      abort_vncviewer(_("Error reading configuration file \"%s\":\n\n%s"),
-                      vncServerName, e.str());
+      abort_vncviewer(_("Unable to load the specified configuration "
+                        "file:\n\n%s"), e.str());
     }
   }
 }
@@ -592,12 +650,18 @@ static int mktunnel()
 
 int main(int argc, char** argv)
 {
+  const char *localedir;
   UserDialog dlg;
 
   argv0 = argv[0];
 
   setlocale(LC_ALL, "");
-  bindtextdomain(PACKAGE_NAME, CMAKE_INSTALL_FULL_LOCALEDIR);
+
+  localedir = getlocaledir();
+  if (localedir == NULL)
+    fprintf(stderr, "Failed to determine locale directory\n");
+  else
+    bindtextdomain(PACKAGE_NAME, localedir);
   textdomain(PACKAGE_NAME);
 
   // Write about text to console, still using normal locale codeset

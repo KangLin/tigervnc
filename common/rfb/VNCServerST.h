@@ -35,6 +35,7 @@ namespace rfb {
 
   class VNCSConnectionST;
   class ComparingUpdateTracker;
+  class ListConnInfo;
   class PixelBuffer;
   class KeyRemapper;
 

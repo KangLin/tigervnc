@@ -1,19 +1,25 @@
 /* Copyright 2021 Hugo Lundin <huglu@cendio.se> for Cendio AB.
+ * Copyright 2021 Pierre Ossman for Cendio AB
  * 
- * This is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
  * 
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  * 
- * You should have received a copy of the GNU General Public License
- * along with this software; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
- * USA.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include <set>
@@ -53,15 +59,13 @@
 #include "MonitorArrangement.h"
 
 static std::set<MonitorArrangement *> instances;
-static rfb::LogWriter vlog("MonitorArrangement");
 static const Fl_Boxtype FL_CHECKERED_BOX = FL_FREE_BOXTYPE;
 
 MonitorArrangement::MonitorArrangement(
    int x, int y, int w, int h)
 :  Fl_Group(x, y, w, h),
    SELECTION_COLOR(fl_lighter(FL_BLUE)),
-   AVAILABLE_COLOR(fl_lighter(fl_lighter(fl_lighter(FL_BACKGROUND_COLOR)))),
-   monitors()
+   AVAILABLE_COLOR(fl_lighter(fl_lighter(fl_lighter(FL_BACKGROUND_COLOR))))
 {
   // Used for required monitors.
   Fl::set_boxtype(FL_CHECKERED_BOX, checkered_pattern_draw, 0, 0, 0, 0);
@@ -87,10 +91,11 @@ MonitorArrangement::~MonitorArrangement()
 std::set<int> MonitorArrangement::get()
 {
   std::set<int> indices;
+  MonitorMap::const_iterator iter;
 
-  for (int i = 0; i < (int) monitors.size(); i++) {
-    if (monitors[i]->value() == 1)
-      indices.insert(i);
+  for (iter = monitors.begin(); iter != monitors.end(); ++iter) {
+    if (iter->second->value() == 1)
+      indices.insert(iter->first);
   }
 
   return indices;
@@ -98,18 +103,23 @@ std::set<int> MonitorArrangement::get()
 
 void MonitorArrangement::set(std::set<int> indices)
 {
-  for (int i = 0; i < (int) monitors.size(); i++) {
-    bool selected = std::find(indices.begin(), indices.end(), i) != indices.end();
-    monitors[i]->value(selected ? 1 : 0);
+  MonitorMap::const_iterator iter;
+
+  for (iter = monitors.begin(); iter != monitors.end(); ++iter) {
+    bool selected = std::find(indices.begin(), indices.end(),
+                              iter->first) != indices.end();
+    iter->second->value(selected ? 1 : 0);
   }
 }
 
 void MonitorArrangement::draw()
 {
-  for (int i = 0; i < (int) monitors.size(); i++) {
-    Fl_Button * monitor = monitors[i];
+  MonitorMap::const_iterator iter;
 
-    if (is_required(i)) {
+  for (iter = monitors.begin(); iter != monitors.end(); ++iter) {
+    Fl_Button * monitor = iter->second;
+
+    if (is_required(iter->first)) {
       monitor->box(FL_CHECKERED_BOX);
       monitor->color(SELECTION_COLOR);
     } else {
@@ -130,7 +140,25 @@ void MonitorArrangement::layout()
   std::pair<int, int> offset = this->offset();
 
   for (int i = 0; i < Fl::screen_count(); i++) {
+    bool match;
+
     Fl::screen_xywh(x, y, w, h, i);
+
+    // Only keep a single entry for mirrored screens
+    match = false;
+    for (int j = 0; j < i; j++) {
+        int x2, y2, w2, h2;
+
+        Fl::screen_xywh(x2, y2, w2, h2, j);
+
+        if ((x != x2) || (y != y2) || (w != w2) || (h != h2))
+            continue;
+
+        match = true;
+        break;
+    }
+    if (match)
+        continue;
 
     Fl_Button *monitor = new Fl_Button(
       /* x = */ this->x() + offset.first + x*scale + (1 - MARGIN_SCALE_FACTOR)*x*scale,
@@ -143,11 +171,9 @@ void MonitorArrangement::layout()
     monitor->callback(monitor_pressed, this);
     monitor->type(FL_TOGGLE_BUTTON);
     monitor->when(FL_WHEN_CHANGED);
-    monitors.push_back(monitor);
+    monitor->copy_tooltip(description(i).c_str());
+    monitors[i] = monitor;
   }
-
-  for (int i = 0; i < (int) monitors.size(); i++)
-    monitors[i]->copy_tooltip(description(i).c_str());
 }
 
 void MonitorArrangement::refresh()
@@ -220,13 +246,19 @@ bool MonitorArrangement::is_required(int m)
     }
   }
 
-  rfb::Rect viewport, monitor;
-  viewport.setXYWH(left_x, top_y, right_x - left_x, bottom_y - top_y);
 
   Fl::screen_xywh(x, y, w, h, m);
-  monitor.setXYWH(x, y, w, h);
 
-  return monitor.enclosed_by(viewport);
+  if (x < left_x)
+    return false;
+  if ((x + w) > right_x)
+    return false;
+  if (y < top_y)
+    return false;
+  if ((y + h) > bottom_y)
+    return false;
+
+  return true;
 }
 
 double MonitorArrangement::scale()
@@ -308,16 +340,16 @@ std::pair<int, int> MonitorArrangement::origin()
 
 std::string MonitorArrangement::description(int m)
 {
-  assert(m < (int) monitors.size());
-  const size_t name_len = 1024;
-  char name[name_len] = {};
-  int bytes_written = get_monitor_name(m, name, name_len);
-
+  std::string name;
   int x, y, w, h;
-  Fl::screen_xywh(x, y, w, h, m);
   std::stringstream ss;
 
-  if (bytes_written > 0)
+  assert(m < Fl::screen_count());
+
+  name = get_monitor_name(m);
+  Fl::screen_xywh(x, y, w, h, m);
+
+  if (!name.empty())
     ss << name << " (" << w << "x" << h << ")";
   else
     ss << w << "x" << h;
@@ -325,36 +357,97 @@ std::string MonitorArrangement::description(int m)
   return ss.str();
 }
 
-int MonitorArrangement::get_monitor_name(int m, char name[], size_t name_len)
+#if defined(WIN32)
+static BOOL CALLBACK EnumDisplayMonitorsCallback(
+  HMONITOR monitor, HDC deviceContext, LPRECT rect, LPARAM userData)
+{
+  std::set<HMONITOR>* sys_monitors = (std::set<HMONITOR>*)userData;
+  sys_monitors->insert(monitor);
+  return TRUE;
+}
+#endif
+
+std::string MonitorArrangement::get_monitor_name(int m)
 {
 #if defined(WIN32)
+  std::set<HMONITOR> sys_monitors;
+  std::set<HMONITOR>::const_iterator iter;
   int x, y, w, h;
-  Fl::screen_xywh(x, y, w, h, m);
-  return win32_get_monitor_name(x, y, w, h, name, name_len);
 
+  Fl::screen_xywh(x, y, w, h, m);
+
+  EnumDisplayMonitors(NULL, NULL, EnumDisplayMonitorsCallback,
+                      (LPARAM)&sys_monitors);
+
+  for (iter = sys_monitors.begin(); iter != sys_monitors.end(); ++iter) {
+    MONITORINFOEX info;
+    DISPLAY_DEVICE dev;
+    std::string name;
+
+    info.cbSize = sizeof(info);
+    GetMonitorInfo(*iter, (LPMONITORINFO)&info);
+
+    if (info.rcMonitor.left != x)
+      continue;
+    if (info.rcMonitor.top != y)
+      continue;
+    if ((info.rcMonitor.right - info.rcMonitor.left) != w)
+      continue;
+    if ((info.rcMonitor.bottom - info.rcMonitor.top) != h)
+      continue;
+
+    for (int i = 0; ; i++) {
+      dev.cb = sizeof(dev);
+      if (!EnumDisplayDevices(info.szDevice, i, &dev, 0))
+        break;
+
+      if (!(dev.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP))
+        continue;
+
+      if (!name.empty())
+        name += " / ";
+      name += dev.DeviceString;
+    }
+
+    return name;
+  }
+
+  return "";
 #elif defined(__APPLE__)
   CGDisplayCount count;
-  int bytes_written = 0;
   CGDirectDisplayID displays[16];
 
+  CGDirectDisplayID displayID;
+  CFDictionaryRef info;
+  CFDictionaryRef dict;
+  CFIndex dict_len;
+
+  std::string name;
+
   if (CGGetActiveDisplayList(16, displays, &count) != kCGErrorSuccess)
-    return -1;
+    return "";
 
   if (count != (unsigned)Fl::screen_count())
-    return -1;
+    return "";
 
   if (m >= (int)count)
-    return -1;
+    return "";
 
   // Notice: Here we assume indices to be ordered the same as in FLTK (we rely on that in cocoa.mm as well).
-  CGDirectDisplayID displayID = displays[m];
+  displayID = displays[m];
 
-  CFDictionaryRef info = IODisplayCreateInfoDictionary(
-    /* display = */ CGDisplayIOServicePort(displayID),
-    /* options = */ kIODisplayOnlyPreferredName);
+  info = IODisplayCreateInfoDictionary(CGDisplayIOServicePort(displayID),
+                                       kIODisplayOnlyPreferredName);
+  if (info == NULL)
+    return "";
 
-  CFDictionaryRef dict = (CFDictionaryRef) CFDictionaryGetValue(info, CFSTR(kDisplayProductName));
-  CFIndex dict_len = CFDictionaryGetCount(dict);
+  dict = (CFDictionaryRef) CFDictionaryGetValue(info, CFSTR(kDisplayProductName));
+  if (dict == NULL) {
+    CFRelease(info);
+    return "";
+  }
+
+  dict_len = CFDictionaryGetCount(dict);
 
   if (dict_len > 0) {
     CFTypeRef * names = new CFTypeRef[dict_len];
@@ -372,15 +465,17 @@ int MonitorArrangement::get_monitor_name(int m, char name[], size_t name_len)
       // with that encoding will fit.
       CFIndex localized_name_max_size = CFStringGetMaximumSizeForEncoding(localized_name_len, kCFStringEncodingUTF8) + 1;
 
-      if (name_len > (size_t)localized_name_max_size) {
+      if (localized_name_max_size != kCFNotFound) {
+        char *utf8_name = new char[localized_name_max_size];
         if (CFStringGetCString(
           /* ref = */ localized_name,
-          /* dest = */ name,
-          /* dest_len = */ name_len,
+          /* dest = */ utf8_name,
+          /* dest_len = */ localized_name_max_size,
           /* encoding = */ kCFStringEncodingUTF8))
         {
-          bytes_written = strlen(name);
+          name = utf8_name;
         }
+        delete [] utf8_name;
       }
     }
 
@@ -388,61 +483,53 @@ int MonitorArrangement::get_monitor_name(int m, char name[], size_t name_len)
   }
 
   CFRelease(info);
-  return bytes_written;
+
+  return name;
 
 #else
 #if defined (HAVE_XRANDR)
   int x, y, w, h;
   int ev, err, xi_major;
+  std::string name;
 
   fl_open_display();
   assert(fl_display != NULL);
   Fl::screen_xywh(x, y, w, h, m);
 
-  if (!XQueryExtension(fl_display, "RANDR", &xi_major, &ev, &err)) {
-    vlog.info(_("Failed to get monitor name because X11 RandR could not be found"));
-    return -1;
-  }
+  if (!XQueryExtension(fl_display, "RANDR", &xi_major, &ev, &err))
+    return "";
 
   XRRScreenResources *res = XRRGetScreenResources(fl_display, DefaultRootWindow(fl_display));
-  if (!res) {
-    vlog.error(_("Failed to get XRRScreenResources for root window"));
-    return -1;
-  }
+  if (!res)
+    return "";
 
   for (int i = 0; i < res->ncrtc; i++) {
     XRRCrtcInfo *crtc = XRRGetCrtcInfo(fl_display, res, res->crtcs[i]);
 
-    if (!crtc) {
-      vlog.error(_("Failed to get XRRCrtcInfo for crtc %d"), i);
+    if (!crtc)
       continue;
-    }
+
+    if ((crtc->x != x) || (crtc->y != y) ||
+        ((int)crtc->width != w) || ((int)crtc->height != h))
+          continue;
 
     for (int j = 0; j < crtc->noutput; j++) {
-      bool monitor_found = (crtc->x == x) &&
-          (crtc->y == y) &&
-          (crtc->width == ((unsigned int) w)) &&
-          (crtc->height == ((unsigned int) h));
+      XRROutputInfo *output;
 
-      if (monitor_found) {
-        XRROutputInfo *output = XRRGetOutputInfo(fl_display, res, crtc->outputs[j]);
-        if (!output) {
-          vlog.error(_("Failed to get XRROutputInfo for crtc %d, output %d"), i, j);
-          continue;
-        }
+      output = XRRGetOutputInfo(fl_display, res, crtc->outputs[j]);
+      if (!output)
+        continue;
 
-        if (strlen(output->name) >= name_len)
-          return -1;
-
-        return snprintf(name, name_len, "%.*s", (int)name_len, output->name);
-      }
+      if (!name.empty())
+        name += " / ";
+      name += output->name;
     }
   }
 
-  return -1;
+  return name;
 
 #endif // !HAVE_XRANDR
-  return 0;
+  return "";
 #endif
 }
 

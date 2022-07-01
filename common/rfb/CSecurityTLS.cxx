@@ -288,10 +288,10 @@ void CSecurityTLS::setParam()
       vlog.error("Could not load system certificate trust store");
 
     if (*cafile && gnutls_certificate_set_x509_trust_file(cert_cred,cafile,GNUTLS_X509_FMT_PEM) < 0)
-      throw AuthFailureException("load of CA cert failed");
+      vlog.error("Could not load user specified certificate authority");
 
     if (*crlfile && gnutls_certificate_set_x509_crl_file(cert_cred,crlfile,GNUTLS_X509_FMT_PEM) < 0)
-      throw AuthFailureException("load of CRL failed");
+      vlog.error("Could not load user specified certificate revocation list");
 
     if (gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, cert_cred) != GNUTLS_E_SUCCESS)
       throw AuthFailureException("gnutls_credentials_set failed");
@@ -309,7 +309,8 @@ void CSecurityTLS::checkSession()
 {
   const unsigned allowed_errors = GNUTLS_CERT_INVALID |
 				  GNUTLS_CERT_SIGNER_NOT_FOUND |
-				  GNUTLS_CERT_SIGNER_NOT_CA;
+				  GNUTLS_CERT_SIGNER_NOT_CA |
+				  GNUTLS_CERT_EXPIRED;
   unsigned int status;
   const gnutls_datum_t *cert_list;
   unsigned int cert_list_size = 0;
@@ -381,13 +382,15 @@ void CSecurityTLS::checkSession()
     vlog.debug("server cert signer not found");
   if (status & GNUTLS_CERT_SIGNER_NOT_CA)
     vlog.debug("server cert signer not CA");
+  if (status & GNUTLS_CERT_EXPIRED)
+    vlog.debug("server certificate has expired");
 
   if (status & GNUTLS_CERT_INSECURE_ALGORITHM)
     throw AuthFailureException("The server certificate uses an insecure algorithm");
 
   if ((status & (~allowed_errors)) != 0) {
     /* No other errors are allowed */
-    vlog.debug("GNUTLS status of certificate verification: %u", status);
+    vlog.debug("GNUTLS status of certificate verification: 0x%x", status);
     throw AuthFailureException("Invalid status of server certificate verification");
   }
 
@@ -435,6 +438,8 @@ void CSecurityTLS::checkSession()
     vlog.debug("Server host not previously known");
     vlog.debug("%s", info.data);
 
+    if (status & (GNUTLS_CERT_SIGNER_NOT_FOUND |
+                  GNUTLS_CERT_SIGNER_NOT_CA)) {
     text.format("This certificate has been signed by an unknown "
                 "authority:\n\n%s\n\nSomeone could be trying to "
                 "impersonate the site and you should not "
@@ -445,12 +450,27 @@ void CSecurityTLS::checkSession()
                          "Unknown certificate issuer",
                          text.buf))
       throw AuthFailureException("Unknown certificate issuer");
+    }
+
+    if (status & GNUTLS_CERT_EXPIRED) {
+      text.format("This certificate has expired:\n\n%s\n\nSomeone "
+                  "could be trying to impersonate the site and you "
+                  "should not continue.\n\nDo you want to make an "
+                  "exception for this server?", info.data);
+
+      if (!msg->showMsgBox(UserMsgBox::M_YESNO,
+                           "Expired certificate",
+                           text.buf))
+        throw AuthFailureException("Expired certificate");
+    }
   } else if (err == GNUTLS_E_CERTIFICATE_KEY_MISMATCH) {
     CharArray text;
 
     vlog.debug("Server host key mismatch");
     vlog.debug("%s", info.data);
 
+    if (status & (GNUTLS_CERT_SIGNER_NOT_FOUND |
+                  GNUTLS_CERT_SIGNER_NOT_CA)) {
     text.format("This host is previously known with a different "
                 "certificate, and the new certificate has been "
                 "signed by an unknown authority:\n\n%s\n\nSomeone "
@@ -462,6 +482,21 @@ void CSecurityTLS::checkSession()
                          "Unexpected server certificate",
                          text.buf))
       throw AuthFailureException("Unexpected server certificate");
+    }
+
+    if (status & GNUTLS_CERT_EXPIRED) {
+      text.format("This host is previously known with a different "
+                  "certificate, and the new certificate has expired:"
+                  "\n\n%s\n\nSomeone could be trying to impersonate "
+                  "the site and you should not continue.\n\nDo you "
+                  "want to make an exception for this server?",
+                  info.data);
+
+      if (!msg->showMsgBox(UserMsgBox::M_YESNO,
+                           "Unexpected server certificate",
+                           text.buf))
+        throw AuthFailureException("Unexpected server certificate");
+    }
   }
 
   if (gnutls_store_pubkey(dbPath.buf, NULL, client->getServerName(),

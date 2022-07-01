@@ -579,9 +579,7 @@ int Viewport::handle(int event)
       cc->sendClipboardData(rfb::clipboardUTF8, filtered, strlen(filtered));
     } catch (rdr::Exception& e) {
       vlog.error("%s", e.str());
-      abort_connection(_("An unexpected error occurred when "
-                         "communicating with the server:\n\n%s"),
-                       e.str());
+      abort_connection_with_unexpected_error(e);
     }
 
     strFree(filtered);
@@ -677,9 +675,7 @@ void Viewport::sendPointerEvent(const rfb::Point& pos, int buttonMask)
       cc->writer()->writePointerEvent(pos, buttonMask);
     } catch (rdr::Exception& e) {
       vlog.error("%s", e.str());
-      abort_connection(_("An unexpected error occurred when "
-                         "communicating with the server:\n\n%s"),
-                       e.str());
+      abort_connection_with_unexpected_error(e);
     }
   } else {
     if (!Fl::has_timeout(handlePointerTimeout, this))
@@ -780,9 +776,7 @@ void Viewport::handleClipboardChange(int source, void *data)
     self->cc->announceClipboard(true);
   } catch (rdr::Exception& e) {
     vlog.error("%s", e.str());
-    abort_connection(_("An unexpected error occurred when "
-                       "communicating with the server:\n\n%s"),
-                     e.str());
+    abort_connection_with_unexpected_error(e);
   }
 }
 
@@ -795,9 +789,7 @@ void Viewport::flushPendingClipboard()
       cc->requestClipboard();
     } catch (rdr::Exception& e) {
       vlog.error("%s", e.str());
-      abort_connection(_("An unexpected error occurred when "
-                         "communicating with the server:\n\n%s"),
-                       e.str());
+      abort_connection_with_unexpected_error(e);
     }
   }
   if (pendingClientClipboard) {
@@ -806,9 +798,7 @@ void Viewport::flushPendingClipboard()
       cc->announceClipboard(true);
     } catch (rdr::Exception& e) {
       vlog.error("%s", e.str());
-      abort_connection(_("An unexpected error occurred when "
-                         "communicating with the server:\n\n%s"),
-                       e.str());
+      abort_connection_with_unexpected_error(e);
     }
   }
 
@@ -834,9 +824,7 @@ void Viewport::handlePointerTimeout(void *data)
                                           self->lastButtonMask);
   } catch (rdr::Exception& e) {
     vlog.error("%s", e.str());
-    abort_connection(_("An unexpected error occurred when "
-                       "communicating with the server:\n\n%s"),
-                     e.str());
+    abort_connection_with_unexpected_error(e);
   }
 }
 
@@ -905,9 +893,7 @@ void Viewport::handleKeyPress(int keyCode, rdr::U32 keySym)
       cc->writer()->writeKeyEvent(keySym, keyCode, true);
   } catch (rdr::Exception& e) {
     vlog.error("%s", e.str());
-    abort_connection(_("An unexpected error occurred when "
-                       "communicating with the server:\n\n%s"),
-                     e.str());
+    abort_connection_with_unexpected_error(e);
   }
 }
 
@@ -941,9 +927,7 @@ void Viewport::handleKeyRelease(int keyCode)
       cc->writer()->writeKeyEvent(iter->second, keyCode, false);
   } catch (rdr::Exception& e) {
     vlog.error("%s", e.str());
-    abort_connection(_("An unexpected error occurred when "
-                       "communicating with the server:\n\n%s"),
-                     e.str());
+    abort_connection_with_unexpected_error(e);
   }
 
   downKeySym.erase(iter);

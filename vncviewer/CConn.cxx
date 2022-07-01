@@ -243,12 +243,13 @@ void CConn::socketEvent(FL_SOCKET fd, void *data)
     return;
 
   recursing = true;
+  Fl::remove_fd(fd);
 
   try {
     // We might have been called to flush unwritten socket data
     cc->sock->outStream().flush();
 
-    cc->sock->outStream().cork(true);
+    cc->getOutStream()->cork(true);
 
     // processMsg() only processes one message, so we need to loop
     // until the buffers are empty or things will stall.
@@ -264,8 +265,7 @@ void CConn::socketEvent(FL_SOCKET fd, void *data)
          break;
     }
 
-    cc->sock->outStream().cork(false);
-    cc->sock->outStream().flush();
+    cc->getOutStream()->cork(false);
   } catch (rdr::EndOfStream& e) {
     vlog.info("%s", e.str());
     if (!cc->desktop) {
@@ -278,8 +278,7 @@ void CConn::socketEvent(FL_SOCKET fd, void *data)
     }
   } catch (rdr::Exception& e) {
     vlog.error("%s", e.str());
-    abort_connection(_("An unexpected error occurred when communicating "
-                     "with the server:\n\n%s"), e.str());
+    abort_connection_with_unexpected_error(e);
   }
 
   when = FL_READ | FL_EXCEPT;
@@ -289,6 +288,7 @@ void CConn::socketEvent(FL_SOCKET fd, void *data)
   Fl::add_fd(fd, when, socketEvent, data);
 
   recursing = false;
+  Fl::add_fd(fd, FL_READ | FL_EXCEPT, socketEvent, data);
 }
 
 ////////////////////// CConnection callback methods //////////////////////

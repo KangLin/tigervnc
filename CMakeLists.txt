@@ -2,13 +2,7 @@
 # Setup
 #
 
-cmake_minimum_required(VERSION 2.8.11)
-if(POLICY CMP0022)
-    cmake_policy(SET CMP0022 OLD)
-endif()
-if(${CMAKE_VERSION} VERSION_LESS "3.4.0")
-    message(WARNING "CMake 3.4.0 or newer is required to get correct default installation paths")
-endif()
+cmake_minimum_required(VERSION 3.10.0)
 
 # Internal cmake modules
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
@@ -24,11 +18,13 @@ include(CheckCSourceRuns)
 
 include(CMakeMacroLibtoolFile)
 
+include(cmake/TargetLinkDirectories.cmake)
+
 project(tigervnc)
-set(VERSION 1.11.80)
+set(VERSION 1.12.80)
 
 # The RC version must always be four comma-separated numbers
-set(RCVERSION 1,11,80,0)
+set(RCVERSION 1,12,80,0)
 
 # Installation paths
 include(GNUInstallDirs)
@@ -64,6 +60,11 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -UNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -UNDEBUG")
 set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS_MINSIZEREL} -UNDEBUG")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -UNDEBUG")
+
+# But extra debug checks are still gated by this custom define
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+  add_definitions(-D_DEBUG)
+ENDIF()
 
 # Make sure we get a sane C version
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
@@ -184,6 +185,29 @@ if(ENABLE_NLS)
     endif()
 endif()
 
+option(ENABLE_H264 "Enable H.264 RFB encoding" ON)
+if(ENABLE_H264)
+  if(WIN32)
+    add_definitions("-DHAVE_H264")
+    set(H264_LIBS "WIN")  # may be LIBAV in the future
+    set(H264_LIBRARIES ole32 mfplat mfuuid wmcodecdspuuid)
+  else()
+    find_package(Ffmpeg)
+    if (AVCODEC_FOUND AND AVUTIL_FOUND AND SWSCALE_FOUND)
+      set(H264_INCLUDE_DIRS ${AVCODEC_INCLUDE_DIRS} ${AVUTIL_INCLUDE_DIRS} ${SWSCALE_INCLUDE_DIRS})
+      set(H264_LIBRARIES ${AVCODEC_LIBRARIES} ${AVUTIL_LIBRARIES} ${SWSCALE_LIBRARIES})
+      set(H264_LIBRARY_DIRS ${AVCODEC_LIBRARY_DIRS} ${AVUTIL_LIBRARY_DIRS} ${SWSCALE_LIBRARY_DIRS})
+      add_definitions("-D__STDC_CONSTANT_MACROS")
+      add_definitions("-DHAVE_H264")
+      set(H264_LIBS "LIBAV")
+    else()
+      set(H264_LIBS "NONE")
+      message(WARNING "FFMPEG support can't be found")
+    endif()
+  endif()
+  add_definitions("-DH264_${H264_LIBS}")
+endif()
+
 # Check for libjpeg
 find_package(JPEG REQUIRED)
 
@@ -280,6 +304,19 @@ if(UNIX AND NOT APPLE)
     else()
         message(FATAL_ERROR "Could not find PAM development files")
     endif()
+endif()
+
+# Check for SELinux library
+if(UNIX AND NOT APPLE)
+  check_include_files(selinux/selinux.h HAVE_SELINUX_H)
+  if(HAVE_SELINUX_H)
+    set(CMAKE_REQUIRED_LIBRARIES -lselinux)
+    set(CMAKE_REQUIRED_LIBRARIES)
+    set(SELINUX_LIBS selinux)
+    add_definitions("-DHAVE_SELINUX")
+  else()
+    message(WARNING "Could not find SELinux development files")
+  endif()
 endif()
 
 # Generate config.h and make sure the source finds it

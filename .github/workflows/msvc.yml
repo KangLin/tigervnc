@@ -1,0 +1,85 @@
+name: msvc
+
+on: [push]
+
+jobs:
+  use_install_qt:
+    name: ${{matrix.os}}-vc-${{matrix.VCPKG_PLATFORM_TOOLSET}}-${{matrix.triplet}}-${{matrix.BUILD_TYPE}}
+
+    strategy:
+      matrix:
+        BUILD_TYPE: [Release, Debug]
+        os: [windows-latest]
+        CMAKE_GENERATOR: [Visual Studio 17 2022]
+        CMAKE_GENERATOR_PLATFORM: [x64, Win32]
+        include:
+          - triplet: x64-windows
+            VCPKG_PLATFORM_TOOLSET: v142
+            CMAKE_GENERATOR_PLATFORM: x64
+
+          - triplet: x64-windows
+            VCPKG_PLATFORM_TOOLSET: v142
+            CMAKE_GENERATOR_PLATFORM: x64
+
+          - triplet: x86-windows
+            VCPKG_PLATFORM_TOOLSET: v141
+            CMAKE_GENERATOR_PLATFORM: Win32
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      SOURCE_DIR:  ${{github.workspace}}\.cache\source
+      TOOSL_DIR:   ${{github.workspace}}\.cache\tools
+      INSTALL_DIR: ${{github.workspace}}\.cache\install_msvc_${{matrix.triplet}}_${{matrix.BUILD_TYPE}}
+      CMAKE_GENERATOR: ${{matrix.CMAKE_GENERATOR}}
+      VCPKG_PLATFORM_TOOLSET: ${{matrix.VCPKG_PLATFORM_TOOLSET}}
+      CMAKE_GENERATOR_PLATFORM: ${{matrix.CMAKE_GENERATOR_PLATFORM}}
+      TigerVNC_VERSION: v0.0.18
+      VCPKGGITCOMMITID: 5cf60186a241e84e8232641ee973395d4fde90e1
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: make directory
+      run: |
+        cmake -E make_directory ${{env.SOURCE_DIR}}
+        cmake -E make_directory ${{env.TOOSL_DIR}}
+        cmake -E make_directory ${{env.INSTALL_DIR}}
+
+    - name: Cache installed
+      uses: actions/cache@v2
+      id: cache-installed
+      with:
+        path: |
+          ${{env.INSTALL_DIR}}
+        key: TigerVNC_msvc_cache-installed-${{matrix.os}}-vc${{matrix.VCPKG_PLATFORM_TOOLSET}}-${{matrix.triplet}}-${{matrix.BUILD_TYPE}}
+
+    - name: run-vcpkg
+      uses: lukka/run-vcpkg@v7.4
+      with:
+        vcpkgGitCommitId: ${{env.VCPKGGITCOMMITID}}
+        vcpkgDirectory: ${{runner.workspace}}/vcpkg/
+        appendedCacheKey: cache-vcpkg-msvc-${{matrix.os}}-vc${{matrix.VCPKG_PLATFORM_TOOLSET}}-${{matrix.triplet}}-qt${{matrix.qt_version}}-${{matrix.BUILD_TYPE}}-${{env.VCPKGGITCOMMITID}}
+        vcpkgTriplet: '${{matrix.triplet}}'
+        vcpkgArguments: 'zlib openssl libpng pixman libjpeg-turbo ffmpeg'
+
+    - name: build TigerVNC
+      working-directory: ${{env.SOURCE_DIR}}
+      run: |
+        cmake -E make_directory build
+        cd build
+        cmake ${{github.workspace}} ^
+            -A ${{matrix.CMAKE_GENERATOR_PLATFORM}} ^
+            -T ${{matrix.VCPKG_PLATFORM_TOOLSET}} ^
+            -DCMAKE_BUILD_TYPE=${{matrix.BUILD_TYPE}} ^
+            -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_DIR }}" ^
+            -DBUILD_TESTS=OFF -DBUILD_VIEWER=OFF ^
+            -DCMAKE_TOOLCHAIN_FILE="${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake"
+        cmake --build . --config ${{matrix.BUILD_TYPE}}
+        cmake --build . --config ${{matrix.BUILD_TYPE}} --target install
