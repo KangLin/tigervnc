@@ -75,7 +75,7 @@ static const PixelFormat mediumColourPF(8, 8, false, true,
 // Time new bandwidth estimates are weighted against (in ms)
 static const unsigned bpsEstimateWindow = 1000;
 
-CConn::CConn(const char* vncServerName, network::Socket* socket, rfb::UserPasswdGetter* upg)
+CConn::CConn(const char* vncServerName, network::Socket* socket, rfb::UserPasswdGetter* upg, rfb::UserMsgBox *msg)
   : serverHost(0), serverPort(0), desktop(NULL),
     updateCount(0), pixelCount(0),
     lastServerEncoding((unsigned int)-1), bpsEstimate(20000000)
@@ -120,6 +120,7 @@ CConn::CConn(const char* vncServerName, network::Socket* socket, rfb::UserPasswd
   Fl::add_fd(sock->getFd(), FL_READ | FL_EXCEPT, socketEvent, this);
 
   security.setUserPasswdGetter(upg);
+  security.setUseMsgBox(msg);
   setServerName(serverHost);
   setStreams(&sock->inStream(), &sock->outStream());
     

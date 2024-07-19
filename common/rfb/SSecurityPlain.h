@@ -20,14 +20,9 @@
 #ifndef __RFB_SSECURITYPLAIN_H__
 #define __RFB_SSECURITYPLAIN_H__
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <rfb/SConnection.h>
 #include <rfb/SSecurity.h>
 #include <rfb/SSecurityVeNCrypt.h>
-#include <rfb/util.h>
 #include <rfb/Configuration.h>
 
 namespace rfb {
@@ -48,19 +43,16 @@ namespace rfb {
   class SSecurityPlain : public SSecurity {
   public:
     SSecurityPlain(SConnection* sc);
-    virtual bool processMsg();
-    virtual int getType() const { return secTypePlain; };
-    virtual const char* getUserName() const { return username.buf; }
+    bool processMsg() override;
+    int getType() const override { return secTypePlain; };
+    const char* getUserName() const override { return username; }
 
     virtual ~SSecurityPlain() { }
 
   private:
     PasswordValidator* valid;
     unsigned int ulen, plen, state;
-    CharArray username;
-
-    static const unsigned int MaxSaneUsernameLength = 1024;
-    static const unsigned int MaxSanePasswordLength = 1024;
+    char username[1024];
   };
 
 }

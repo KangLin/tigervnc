@@ -23,6 +23,7 @@
 #include <rfb/CConnection.h>
 #include <rdr/FdInStream.h>
 #include <rfb/UserPasswdGetter.h>
+#include <rfb/UserMsgBox.h>
 
 #include <FL/Fl.H>
 
@@ -33,10 +34,11 @@ class DesktopWindow;
 class CConn : public rfb::CConnection
 {
 public:
-  CConn(const char* vncServerName,
-        network::Socket* sock = NULL,
-	    rfb::UserPasswdGetter* upg = NULL);
-  ~CConn();
+    CConn(const char* vncServerName,
+          network::Socket* sock = nullptr,
+          rfb::UserPasswdGetter* upg = nullptr,
+          rfb::UserMsgBox* msg = nullptr);
+    ~CConn();
 
   const char *connectionInfo();
 

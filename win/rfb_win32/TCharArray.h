@@ -42,7 +42,6 @@
 
 #include <tchar.h>
 #include <rfb/util.h>
-#include <rfb/Password.h>
 
 namespace rfb {
 

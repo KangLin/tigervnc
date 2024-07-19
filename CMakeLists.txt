@@ -227,7 +227,7 @@ if(BUILD_JAVA)
     add_subdirectory(java)
 endif()
 
-option(BUILD_VIEWER "Build TigerVNC viewer" ON)
+option(BUILD_VIEWER "Build TigerVNC viewer" OFF)
 if(BUILD_VIEWER)
 	# Check for FLTK
 	set(FLTK_SKIP_FLUID TRUE)
@@ -291,12 +291,15 @@ include(cmake/StaticBuild.cmake)
 
 add_subdirectory(common)
 
-if(WIN32)
-    add_subdirectory(win)
-else()
-    # No interest in building x related parts on Apple
-    if(NOT APPLE)
-        add_subdirectory(unix)
+option(BUILD_SERVER "Build TigerVNC server" OFF)
+if(BUILD_SERVER)
+    if(WIN32)
+        add_subdirectory(win)
+    else()
+        # No interest in building x related parts on Apple
+        if(NOT APPLE)
+            add_subdirectory(unix)
+        endif()
     endif()
 endif()
 
@@ -313,8 +316,7 @@ if(BUILD_VIEWER)
     endif()
 endif()
 
-option(BUILD_TESTS "Build TigerVNC tests" ON)
-
+option(BUILD_TESTS "Build TigerVNC tests" OFF)
 if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
