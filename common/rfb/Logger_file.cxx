@@ -23,7 +23,6 @@
 
 #include <os/Mutex.h>
 
-#include <limits.h>
 #include <rfb/Logger_file.h>
 
 using namespace rfb;

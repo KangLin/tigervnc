@@ -13,6 +13,10 @@ if(ENABLE_GNUTLS)
     endif()
 endif()
 
+if(MSVC)
+    list(APPEND TIGERVNC_DEFINITIONS NOMINMAX)
+endif()
+
 add_subdirectory(os)
 add_subdirectory(rdr)
 add_subdirectory(rfb)

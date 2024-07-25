@@ -23,7 +23,7 @@
 #include <rfb/Rect.h>
 #include <rfb/ScaleFilters.h>
 #include <os/os.h>
-
+ 
 using namespace rfb;
 
 //
