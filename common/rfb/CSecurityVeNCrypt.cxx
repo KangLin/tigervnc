@@ -22,14 +22,19 @@
 // CSecurityVeNCrypt
 //
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <algorithm>
+#include <list>
+
 #include <rfb/Exception.h>
 #include <rdr/InStream.h>
 #include <rdr/OutStream.h>
 #include <rfb/CConnection.h>
 #include <rfb/CSecurityVeNCrypt.h>
 #include <rfb/LogWriter.h>
-#include <algorithm>
-#include <list>
 
 using namespace rfb;
 using namespace rdr;

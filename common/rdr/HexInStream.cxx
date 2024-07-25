@@ -17,10 +17,18 @@
  * USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <algorithm>
 #include <rdr/HexInStream.h>
 #include <rdr/Exception.h>
 #include <rfb/util.h>
-#include <algorithm>
+
+#if defined(_MSC_VER)
+#undef min
+#endif
 
 using namespace rdr;
 
@@ -31,7 +39,6 @@ HexInStream::HexInStream(InStream& is)
 
 HexInStream::~HexInStream() {
 }
-
 
 bool HexInStream::fillBuffer() {
   if (!in_stream.hasData(2))
