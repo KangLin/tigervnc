@@ -17,6 +17,10 @@
  * USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifndef HAVE_NETTLE
 #error "This header should not be compiled without HAVE_NETTLE defined"
 #endif
@@ -93,7 +97,7 @@ void CSecurityMSLogonII::writeCredentials()
   std::string password;
   rdr::RandomStream rs;
 
-  (CSecurity::upg)->getUserPasswd(isSecure(), &username, &password);
+  cc->getUserPasswd(isSecure(), &username, &password);
 
   std::vector<uint8_t> bBytes(8);
   if (!rs.hasData(8))
@@ -123,10 +127,10 @@ void CSecurityMSLogonII::writeCredentials()
   rs.readBytes(user, 256);
   rs.readBytes(pass, 64);
   if (username.size() >= 256)
-    throw AuthFailureException("username is too long");
+    throw Exception("username is too long");
   memcpy(user, username.c_str(), username.size() + 1);
   if (password.size() >= 64)
-    throw AuthFailureException("password is too long");
+    throw Exception("password is too long");
   memcpy(pass, password.c_str(), password.size() + 1);
 
   // DES-CBC with the original key as IV, and the reversed one as the DES key

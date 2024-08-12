@@ -16,6 +16,10 @@
  * USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifndef HAVE_NETTLE
 #error "This source should not be compiled without HAVE_NETTLE defined"
 #endif

@@ -17,6 +17,10 @@
  * USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifndef HAVE_NETTLE
 #error "This header should not be compiled without HAVE_NETTLE defined"
 #endif
@@ -82,9 +86,9 @@ bool CSecurityDH::readKey()
   uint16_t gen = is->readU16();
   keyLength = is->readU16();
   if (keyLength < MinKeyLength)
-    throw AuthFailureException("DH key is too short");
+    throw Exception("DH key is too short");
   if (keyLength > MaxKeyLength)
-    throw AuthFailureException("DH key is too long");
+    throw Exception("DH key is too long");
   if (!is->hasDataOrRestore(keyLength * 2))
     return false;
   is->clearRestorePoint();
@@ -104,7 +108,7 @@ void CSecurityDH::writeCredentials()
   std::string password;
   rdr::RandomStream rs;
 
-  (CSecurity::upg)->getUserPasswd(isSecure(), &username, &password);
+  cc->getUserPasswd(isSecure(), &username, &password);
 
   std::vector<uint8_t> bBytes(keyLength);
   if (!rs.hasData(keyLength))
@@ -131,10 +135,10 @@ void CSecurityDH::writeCredentials()
     throw ConnFailedException("failed to generate random padding");
   rs.readBytes(buf, 128);
   if (username.size() >= 64)
-    throw AuthFailureException("username is too long");
+    throw Exception("username is too long");
   memcpy(buf, username.c_str(), username.size() + 1);
   if (password.size() >= 64)
-    throw AuthFailureException("password is too long");
+    throw Exception("password is too long");
   memcpy(buf + 64, password.c_str(), password.size() + 1);
   aes128_encrypt(&aesCtx, 128, buf, buf);
 

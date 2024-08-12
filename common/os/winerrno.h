@@ -5,12 +5,6 @@ cat /usr/i686-pc-mingw32/sys-root/mingw/include/winerror.h \
  | egrep -v 'EINTR|EBADF|EACCES|EFAULT|EINVAL|EMFILE|_QOS|PROVIDER|PROCTABLE'
 */
 
-#ifndef OS_WINERRNO
-#define OS_WINERRNO
-
-#pragma once
-#ifdef __GNUC__
-
 #undef EWOULDBLOCK
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #undef EINPROGRESS
@@ -93,6 +87,3 @@ cat /usr/i686-pc-mingw32/sys-root/mingw/include/winerror.h \
 #define ECANCELLED WSAECANCELLED
 #undef EREFUSED
 #define EREFUSED WSAEREFUSED
-
-#endif /*__GNUC__*/
-#endif /*OS_WINERRNO*/

@@ -24,15 +24,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <rfb/util.h>
-#include <rfb/Password.h>
-#include <rfb/Exception.h>
-
-#include "i18n.h"
-#include "fltk_layout.h"
-#include "parameters.h"
-#include "UserDialog.h"
-
 #include <FL/Fl.H>
 #include <FL/fl_ask.H>
 #include <FL/Fl_Window.H>
@@ -40,8 +31,18 @@
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Secret_Input.H>
 #include <FL/Fl_Button.H>
+#include <FL/Fl_Check_Button.H>
 #include <FL/Fl_Return_Button.H>
 #include <FL/Fl_Pixmap.H>
+
+#include <rfb/Exception.h>
+#include <rfb/obfuscate.h>
+
+#include "fltk/layout.h"
+#include "fltk/util.h"
+#include "i18n.h"
+#include "parameters.h"
+#include "UserDialog.h"
 
 /* xpm:s predate const, so they have invalid definitions */
 #pragma GCC diagnostic push
@@ -55,10 +56,10 @@ using namespace rfb;
 static Fl_Pixmap secure_icon(secure);
 static Fl_Pixmap insecure_icon(insecure);
 
-static int ret_val = 0;
+static long ret_val = 0;
 
-static void button_cb(Fl_Widget *widget, void *val) {
-  ret_val = (fl_intptr_t)val;
+static void button_cb(Fl_Widget *widget, long val) {
+  ret_val = val;
   widget->window()->hide();
 }
 
@@ -70,38 +71,55 @@ UserDialog::~UserDialog()
 {
 }
 
-void UserDialog::getUserPasswd(bool secure, char** user, char** password)
+void UserDialog::resetPassword()
 {
-  CharArray passwordFileStr(passwordFile.getData());
+  savedUsername.clear();
+  savedPassword.clear();
+}
+
+void UserDialog::getUserPasswd(bool secure_, std::string* user,
+                               std::string* password)
+{
+  const char *passwordFileName(passwordFile);
 
   assert(password);
   char *envUsername = getenv("VNC_USERNAME");
   char *envPassword = getenv("VNC_PASSWORD");
 
   if(user && envUsername && envPassword) {
-    *user = strdup(envUsername);
-    *password = strdup(envPassword);
+    *user = envUsername;
+    *password = envPassword;
     return;
   }
 
   if (!user && envPassword) {
-    *password = strdup(envPassword);
+    *password = envPassword;
     return;
   }
 
-  if (!user && passwordFileStr.buf[0]) {
-    ObfuscatedPasswd obfPwd(256);
+  if (user && !savedUsername.empty() && !savedPassword.empty()) {
+    *user = savedUsername;
+    *password = savedPassword;
+    return;
+  }
+
+  if (!user && !savedPassword.empty()) {
+    *password = savedPassword;
+    return;
+  }
+
+  if (!user && passwordFileName[0]) {
+    std::vector<uint8_t> obfPwd(256);
     FILE* fp;
 
-    fp = fopen(passwordFileStr.buf, "rb");
+    fp = fopen(passwordFileName, "rb");
     if (!fp)
       throw rfb::Exception(_("Opening password file failed"));
 
-    obfPwd.length = fread(obfPwd.buf, 1, obfPwd.length, fp);
+    obfPwd.resize(fread(obfPwd.data(), 1, obfPwd.size(), fp));
     fclose(fp);
 
-    PlainPasswd passwd(obfPwd);
-    *password = passwd.takeBuf();
+    *password = deobfuscate(obfPwd.data(), obfPwd.size());
 
     return;
   }
@@ -112,16 +130,17 @@ void UserDialog::getUserPasswd(bool secure, char** user, char** password)
   Fl_Secret_Input *passwd;
   Fl_Box *icon;
   Fl_Button *button;
+  Fl_Check_Button *keepPasswdCheckbox;
 
-  int y;
+  int x, y;
 
-  win = new Fl_Window(410, 145, _("VNC authentication"));
-  win->callback(button_cb,(void *)0);
+  win = new Fl_Window(410, 0, _("VNC authentication"));
+  win->callback(button_cb, 0);
 
   banner = new Fl_Box(0, 0, win->w(), 20);
   banner->align(FL_ALIGN_CENTER|FL_ALIGN_INSIDE|FL_ALIGN_IMAGE_NEXT_TO_TEXT);
   banner->box(FL_FLAT_BOX);
-  if (secure) {
+  if (secure_) {
     banner->label(_("This connection is secure"));
     banner->color(FL_GREEN);
     banner->image(secure_icon);
@@ -131,49 +150,68 @@ void UserDialog::getUserPasswd(bool secure, char** user, char** password)
     banner->image(insecure_icon);
   }
 
-  y = 20 + 10;
+  x = OUTER_MARGIN;
+  y = banner->h() + OUTER_MARGIN;
 
-  icon = new Fl_Box(10, y, 50, 50, "?");
+  /* Mimic a fl_ask() box */
+  icon = new Fl_Box(x, y, 50, 50, "?");
   icon->box(FL_UP_BOX);
   icon->labelfont(FL_TIMES_BOLD);
   icon->labelsize(34);
   icon->color(FL_WHITE);
   icon->labelcolor(FL_BLUE);
 
-  y += 5;
+  x += icon->w() + INNER_MARGIN;
+  y += INNER_MARGIN;
 
   if (user) {
-    (new Fl_Box(70, y, win->w()-70-10, 20, _("Username:")))
-      ->align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE);
-    y += 20 + 5;
-    username = new Fl_Input(70, y, win->w()-70-10, 25);
-    y += 25 + 5;
+    y += INPUT_LABEL_OFFSET;
+    username = new Fl_Input(x, y, win->w()- x - OUTER_MARGIN,
+                            INPUT_HEIGHT, _("Username:"));
+    username->align(FL_ALIGN_LEFT | FL_ALIGN_TOP);
+    y += INPUT_HEIGHT + INNER_MARGIN;
   } else {
     /*
      * Compiler is not bright enough to understand that
      * username won't be used further down...
      */
-    username = NULL;
+    username = nullptr;
   }
 
-  (new Fl_Box(70, y, win->w()-70-10, 20, _("Password:")))
-    ->align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE);
-  y += 20 + 5;
-  passwd = new Fl_Secret_Input(70, y, win->w()-70-10, 25);
-  y += 25 + 5;
+  y += INPUT_LABEL_OFFSET;
+  passwd = new Fl_Secret_Input(x, y, win->w()- x - OUTER_MARGIN,
+                               INPUT_HEIGHT, _("Password:"));
+  passwd->align(FL_ALIGN_LEFT | FL_ALIGN_TOP);
+  y += INPUT_HEIGHT + INNER_MARGIN;
 
-  y += 5;
+  if (reconnectOnError) {
+    keepPasswdCheckbox = new Fl_Check_Button(LBLRIGHT(x, y,
+                                                      CHECK_MIN_WIDTH,
+                                                      CHECK_HEIGHT,
+                                                      _("Keep password for reconnect")));
+    y += CHECK_HEIGHT + INNER_MARGIN;
+  } else {
+    keepPasswdCheckbox = nullptr;
+  }
 
-  button = new Fl_Return_Button(310, y, 90, 25, fl_ok);
-  button->align(FL_ALIGN_INSIDE|FL_ALIGN_WRAP);
-  button->callback(button_cb, (void*)0);
+  x = win->w() - OUTER_MARGIN;
+  y += OUTER_MARGIN - INNER_MARGIN;
 
-  button = new Fl_Button(210, y, 90, 25, fl_cancel);
-  button->align(FL_ALIGN_INSIDE|FL_ALIGN_WRAP);
-  button->callback(button_cb, (void*)1);
+  x -= BUTTON_WIDTH;
+  button = new Fl_Return_Button(x, y, BUTTON_WIDTH,
+                                BUTTON_HEIGHT, fl_ok);
+  button->callback(button_cb, 0);
+  x -= INNER_MARGIN;
+
+  x -= BUTTON_WIDTH;
+  button = new Fl_Button(x, y, BUTTON_WIDTH, BUTTON_HEIGHT, fl_cancel);
+  button->callback(button_cb, 1);
   button->shortcut(FL_Escape);
+  x -= INNER_MARGIN;
 
-  y += 25 + 10;
+  y += BUTTON_HEIGHT;
+
+  y += OUTER_MARGIN;
 
   win->end();
 
@@ -187,18 +225,30 @@ void UserDialog::getUserPasswd(bool secure, char** user, char** password)
   while (win->shown()) Fl::wait();
 
   if (ret_val == 0) {
-    if (user)
-      *user = strDup(username->value());
-    *password = strDup(passwd->value());
+    bool keepPasswd;
+
+    if (reconnectOnError)
+      keepPasswd = keepPasswdCheckbox->value();
+    else
+      keepPasswd = false;
+
+    if (user) {
+      *user = username->value();
+      if (keepPasswd)
+        savedUsername = username->value();
+    }
+    *password = passwd->value();
+    if (keepPasswd)
+      savedPassword = passwd->value();
   }
 
   delete win;
 
   if (ret_val != 0)
-    throw rfb::Exception(_("Authentication cancelled"));
+    throw rfb::AuthCancelledException();
 }
 
-bool UserDialog::showMsgBox(int flags, const char* title, const char* text)
+bool UserDialog::showMsgBox(MsgBoxFlags flags, const char* title, const char* text)
 {
   char buffer[1024];
 
@@ -209,16 +259,16 @@ bool UserDialog::showMsgBox(int flags, const char* title, const char* text)
   // bits for now.
 
   fl_message_title(title);
-
-  switch (flags & 0xf) {
-  case M_OKCANCEL:
-    return fl_choice("%s", NULL, fl_ok, fl_cancel, buffer) == 1;
-  case M_YESNO:
-    return fl_choice("%s", NULL, fl_yes, fl_no, buffer) == 1;
-  case M_OK:
+  
+  switch ((MsgBoxFlags)((int)flags & 0xf)) {
+  case MsgBoxFlags::M_OKCANCEL:
+    return fl_choice("%s", nullptr, fl_ok, fl_cancel, buffer) == 1;
+  case MsgBoxFlags::M_YESNO:
+    return fl_choice("%s", nullptr, fl_yes, fl_no, buffer) == 1;
+  case MsgBoxFlags::M_OK:
   default:
-    if (((flags & 0xf0) == M_ICONERROR) ||
-        ((flags & 0xf0) == M_ICONWARNING))
+    if ((((int)flags & 0xf0) == (int)MsgBoxFlags::M_ICONERROR) ||
+          (((int)flags & 0xf0) == (int)MsgBoxFlags::M_ICONWARNING))
       fl_alert("%s", buffer);
     else
       fl_message("%s", buffer);

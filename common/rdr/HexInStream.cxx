@@ -26,10 +26,6 @@
 #include <rdr/Exception.h>
 #include <rfb/util.h>
 
-#if defined(_MSC_VER)
-#undef min
-#endif
-
 using namespace rdr;
 
 HexInStream::HexInStream(InStream& is)
@@ -43,7 +39,7 @@ HexInStream::~HexInStream() {
 bool HexInStream::fillBuffer() {
   if (!in_stream.hasData(2))
     return false;
-  
+
   size_t length = std::min(in_stream.avail()/2, availSpace());
   const uint8_t* iptr = in_stream.getptr(length*2);
 

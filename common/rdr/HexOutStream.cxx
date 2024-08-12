@@ -24,10 +24,6 @@
 #include <rdr/HexOutStream.h>
 #include <rfb/util.h>
 
-#if defined(_MSC_VER)
-#undef min
-#endif
-
 using namespace rdr;
 
 HexOutStream::HexOutStream(OutStream& os)
@@ -66,4 +62,3 @@ void HexOutStream::cork(bool enable)
   BufferedOutStream::cork(enable);
   out_stream.cork(enable);
 }
-

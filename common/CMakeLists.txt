@@ -13,6 +13,11 @@ if(ENABLE_GNUTLS)
     endif()
 endif()
 
+if(MSVC)
+  # undef min and max macro
+  list(APPEND TIGERVNC_DEFINITIONS NOMINMAX)
+endif()
+
 add_subdirectory(os)
 add_subdirectory(rdr)
 add_subdirectory(rfb)
