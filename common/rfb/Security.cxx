@@ -31,7 +31,6 @@
 #include <os/os.h>
 
 using namespace rfb;
-using namespace std;
 
 static LogWriter vlog("Security");
 
@@ -52,7 +51,7 @@ Security::Security(StringParameter &secTypes)
 
 const std::list<uint8_t> Security::GetEnabledSecTypes(void)
 {
-  list<uint8_t> result;
+  std::list<uint8_t> result;
 
   /* Partial workaround for Vino's stupid behaviour. It doesn't allow
    * the basic authentication types as part of the VeNCrypt handshake,
@@ -75,7 +74,7 @@ const std::list<uint8_t> Security::GetEnabledSecTypes(void)
 
 const std::list<uint32_t> Security::GetEnabledExtSecTypes(void)
 {
-  list<uint32_t> result;
+  std::list<uint32_t> result;
 
   for (uint32_t type : enabledSecTypes)
     if (type != secTypeVeNCrypt) /* Do not include VeNCrypt type to avoid loops */

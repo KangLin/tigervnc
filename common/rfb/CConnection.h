@@ -36,7 +36,7 @@ namespace rfb {
   class CMsgWriter;
   class CSecurity;
   class IdentityVerifier;
-  
+
   enum class MsgBoxFlags{
       M_OK = 0,
       M_OKCANCEL = 1,
@@ -48,9 +48,8 @@ namespace rfb {
       M_DEFBUTTON1 = 0,
       M_DEFBUTTON2 = 0x100
   };
-  
-  class CConnection : public CMsgHandler
-  {
+
+  class CConnection : public CMsgHandler {
   public:
 
     CConnection();
@@ -88,16 +87,11 @@ namespace rfb {
     // there is data to read on the InStream.
     void initialiseProtocol();
 
-    // processMsg() should be called whenever there is either:
-    // - data available on the underlying network stream
-    //   In this case, processMsg may return without processing an RFB message,
-    //   if the available data does not result in an RFB message being ready
-    //   to handle. e.g. if data is encrypted.
-    // NB: This makes it safe to call processMsg() in response to select()
-    // - data available on the CConnection's current InStream
-    //   In this case, processMsg should always process the available RFB
-    //   message before returning.
-    // NB: In either case, you must have called initialiseProtocol() first.
+    // processMsg() should be called whenever there is data available on
+    // the CConnection's current InStream. It will process at most one
+    // RFB message before returning. If there was insufficient data,
+    // then it will return false and should be called again once more
+    // data is available.
     bool processMsg();
 
     // close() gracefully shuts down the connection to the server and

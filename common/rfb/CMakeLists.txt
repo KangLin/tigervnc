@@ -160,7 +160,6 @@ set(RFB_HEADS ${RFB_HEADS}
     ${CMAKE_CURRENT_SOURCE_DIR}/Exception.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Hostname.h
     ${CMAKE_CURRENT_SOURCE_DIR}/UserMsgBox.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/InputHandler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/obfuscate.h
     )
 

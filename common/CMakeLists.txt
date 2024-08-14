@@ -10,6 +10,9 @@ if(ENABLE_GNUTLS)
     if (GNUTLS_FOUND)
         set(TIGERVNC_INCLUDE_DIR ${TIGERVNC_INCLUDE_DIR} ${GNUTLS_INCLUDE_DIR})
         SET(TIGERVNC_DEFINITIONS HAVE_GNUTLS ${GNUTLS_DEFINITIONS})
+        if(WIN32 AND NOT ${BUILD_SHARED_LIBS})
+            set(TIGERVNC_PRIVATE_DEFINITIONS GNUTLS_INTERNAL_BUILD)
+        endif()
     endif()
 endif()
 
@@ -35,6 +38,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${TIGERVNC_INCLUDE_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${TIGERVNC_DEFINITIONS})
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${TIGERVNC_PRIVATE_DEFINITIONS})
 
 # For any convenience libraries that are linked into libvnc.so, we need to
 # explicitly build their corresponding sources using PIC.  WIN32 is excluded
