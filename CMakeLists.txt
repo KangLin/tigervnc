@@ -139,7 +139,7 @@ if(MINGW AND "${CMAKE_VERSION}" VERSION_LESS "2.8.7")
 endif()
         
 # X11 stuff. It's in a if() so that we can say REQUIRED
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT ANDROID)
     find_package(X11 REQUIRED)
 endif()
 
@@ -270,7 +270,7 @@ if(ENABLE_GNUTLS)
 endif()
 
 # Check for PAM library
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT ANDROID)
     check_include_files(security/pam_appl.h HAVE_PAM_H)
     set(CMAKE_REQUIRED_LIBRARIES -lpam)
     check_function_exists(pam_start HAVE_PAM_START)
