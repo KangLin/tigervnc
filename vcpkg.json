@@ -5,6 +5,7 @@
     "openssl",
     "libjpeg-turbo",
     "libpng",
-    "pixman"
+    "pixman",
+    "ffmpeg"
   ]
 }
