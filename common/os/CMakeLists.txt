@@ -13,7 +13,7 @@ set(OS_HEADS
     ${CMAKE_CURRENT_SOURCE_DIR}/os.h
     )
 
-if(UNIX)
+if(UNIX AND NOT ANDROID)
     set(TIGERVNC_LIBS ${TIGERVNC_LIBS}
         pthread
         PARENT_SCOPE)
