@@ -24,8 +24,6 @@
 #ifndef __RFB_VNCSERVERST_H__
 #define __RFB_VNCSERVERST_H__
 
-#include <sys/time.h>
-
 #include <core/Timer.h>
 
 #include <rfb/VNCServer.h>

@@ -45,9 +45,11 @@ namespace core {
     // -=- Write data to a log
 
     virtual void write(int level, const char *logname, const char *text) = 0;
-    void write(int level, const char *logname, const char* format, va_list ap)
-        __attribute__((__format__ (__printf__, 4, 0)));
-
+    void write(int level, const char* logname, const char* format, va_list ap)
+    #ifndef _MSC_VER 
+        __attribute__((__format__(__printf__, 4, 0)))
+    #endif
+        ;
     // -=- Register a logger
 
     void registerLogger();

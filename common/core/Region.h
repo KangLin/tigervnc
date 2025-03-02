@@ -58,11 +58,20 @@ namespace core {
     // the following three operations return a new region:
 
     Region intersect(const Region& r) const
-      __attribute__ ((warn_unused_result));
+    #ifndef _MSC_VER
+      __attribute__ ((warn_unused_result))
+    #endif
+        ;
     Region union_(const Region& r) const
-      __attribute__ ((warn_unused_result));
+    #ifndef _MSC_VER
+      __attribute__ ((warn_unused_result))
+    #endif
+        ;
     Region subtract(const Region& r) const
-      __attribute__ ((warn_unused_result));
+    #ifndef _MSC_VER
+      __attribute__ ((warn_unused_result))
+    #endif
+        ;
 
     bool operator==(const Region& b) const;
     bool operator!=(const Region& b) const;

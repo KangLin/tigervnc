@@ -45,6 +45,10 @@ endif()
 if(WIN32)
   target_link_libraries(core ws2_32)
 endif()
+if(MSVC)
+  # undef min and max macro
+  target_compile_definitions(core PRIVATE NOMINMAX)
+endif()
 
 if(UNIX)
   target_sources(core PRIVATE Logger_syslog.cxx)

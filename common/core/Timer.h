@@ -21,7 +21,11 @@
 #define __CORE_TIMER_H__
 
 #include <list>
+#ifdef _MSC_VER
+#include <winsock.h>
+#else
 #include <sys/time.h>
+#endif
 
 namespace core {
 

@@ -24,8 +24,6 @@
 #endif
 
 #include <stdio.h>
-#include <sys/time.h>
-
 #include <algorithm>
 
 #include <core/LogWriter.h>

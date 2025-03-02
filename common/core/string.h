@@ -33,7 +33,10 @@ namespace core {
 
   // Formats according to printf(), with a dynamic allocation
   std::string format(const char *fmt, ...)
-      __attribute__((__format__ (__printf__, 1, 2)));
+  #ifndef _MSC_VER
+      __attribute__((__format__ (__printf__, 1, 2)))
+  #endif
+      ;
 
   // Splits a string with the specified delimiter
   std::vector<std::string> split(const char* src,
@@ -75,6 +78,11 @@ namespace core {
                        int precision=6);
   std::string iecPrefix(long long value, const char *unit,
                         int precision=6);
+
+#ifdef _MSC_VER
+#define strcasecmp stricmp
+#define strncasecmp  strnicmp 
+#endif
 }
 
 #endif
