@@ -13,7 +13,6 @@
       "description": "all dependencies",
       "dependencies": [
           "fltk",
-          "translation",
           "x264",
           "ffmpeg",
           "nettle",
