@@ -24,8 +24,6 @@
 #ifndef __RDR_FDOUTSTREAM_H__
 #define __RDR_FDOUTSTREAM_H__
 
-#include <sys/time.h>
-
 #include <rdr/BufferedOutStream.h>
 
 namespace rdr {

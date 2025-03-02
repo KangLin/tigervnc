@@ -23,7 +23,7 @@
 #endif
 
 #include <core/string.h>
-
+#include <core/time.h>
 #include <rdr/BufferedOutStream.h>
 
 using namespace rdr;

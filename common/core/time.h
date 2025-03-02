@@ -28,6 +28,18 @@
 
 struct timeval;
 
+#if defined(_MSC_VER)
+#include <Windows.h>
+#define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+struct timezone
+{
+    __int32 tz_minuteswest; /* minutes W of Greenwich */
+    BOOL    tz_dsttime;     /* type of dst correction */
+};
+
+int gettimeofday(struct timeval* tv, struct timezone* tz);
+#endif
+
 namespace core {
 
   // secsToMillis() turns seconds into milliseconds, capping the value so it
@@ -53,6 +65,7 @@ namespace core {
   // Returns a new timeval a specified number of milliseconds later than
   // the given timeval
   struct timeval addMillis(struct timeval inTime, int millis);
+
 }
 
 #endif
