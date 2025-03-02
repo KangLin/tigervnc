@@ -1,0 +1,24 @@
+{
+  "name": "tigervnc",
+  "version-string":"0.0.1",
+  "dependencies": [
+    "zlib",
+    "openssl",
+    "libjpeg-turbo",
+    "libpng",
+    "pixman"
+  ],
+  "features": {
+    "all": {
+      "description": "all dependencies",
+      "dependencies": [
+          "fltk",
+          "translation",
+          "x264",
+          "ffmpeg",
+          "nettle",
+          "gettext"
+      ]
+    }
+  }
+}

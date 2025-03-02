@@ -85,6 +85,34 @@ jobs:
           name: test-results-windows
           path: build/tests/unit/test-results.xml
 
+  build-windows-msvc:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd
+    env:
+      SOURCE_DIR:  ${{github.workspace}}\.cache\source
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make folder
+        run: cmake -E make_directory ${{env.SOURCE_DIR}}
+      - name: run-vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: f63682b9182187131b564c1395e4ac8ecb0c5ea8
+          vcpkgDirectory: ${{env.SOURCE_DIR}}/vcpkg
+      - name: Configure
+        run: cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build ^
+          -DCMAKE_INSTALL_PREFIX=install ^
+          -DCMAKE_TOOLCHAIN_FILE="${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake" ^
+          -DVCPKG_MANIFEST_FEATURES="all"
+      - name: Build
+        working-directory: build
+        run: cmake --build .
+      - name: Install applications
+        working-directory: build
+        run: cmake --Install . --component Runtime
+
   build-macos:
     runs-on: macos-latest
     timeout-minutes: 20

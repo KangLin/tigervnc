@@ -40,10 +40,6 @@ endif()
 
 option(INSTALL_SYSTEMD_UNITS "Install TigerVNC systemd units" ON)
 
-if(MSVC)
-  message(FATAL_ERROR "TigerVNC cannot be built with Visual Studio.  Please use MinGW")
-endif()
-
 if(NOT BUILD_TIMESTAMP)
   STRING(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M" UTC)
 endif()
@@ -104,11 +100,6 @@ option(ENABLE_TSAN "Enable thread sanitizer support" OFF)
 if(ENABLE_TSAN AND NOT WIN32 AND NOT APPLE AND CMAKE_SIZEOF_VOID_P MATCHES 8)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=thread")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
-endif()
-
-if(MSVC)
-  # undef min and max macro
-  target_compile_definitions(rfb PRIVATE NOMINMAX)
 endif()
 
 if(NOT DEFINED BUILD_WINVNC)
