@@ -26,7 +26,11 @@
 
 #include <wm_hooks/wm_hooks.h>
 
+#ifdef _MSC_VER
+#define SHARED
+#else
 #define SHARED __attribute__((section ("shared"), shared))
+#endif
 
 UINT WM_HK_PingThread = RegisterWindowMessage("RFB.WM_Hooks.PingThread");
 
@@ -88,7 +92,6 @@ BOOL WINAPI DllMain(HANDLE instance, ULONG reason, LPVOID /*reserved*/) {
 //
 // -=- Display update hooks
 //
-
 DWORD hook_owner SHARED = 0;
 DWORD hook_target SHARED = 0;
 HHOOK hook_CallWndProc SHARED = nullptr;
@@ -374,7 +377,6 @@ BOOL WM_Hooks_Remove(DWORD owner) {
 //
 // -=- User input hooks
 //
-
 HHOOK hook_keyboard SHARED = nullptr;
 HHOOK hook_pointer SHARED = nullptr;
 bool enable_real_ptr SHARED = true;
