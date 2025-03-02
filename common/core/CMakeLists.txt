@@ -8,6 +8,7 @@ set(INSTALL_HEAD_FILES
   Thread.h
   string.h
   time.h
+  Rect.h
   xdgdirs.h)
 set(HEAD_FILES
   ${INSTALL_HEAD_FILES}
@@ -47,7 +48,7 @@ if(WIN32)
 endif()
 if(MSVC)
   # undef min and max macro
-  target_compile_definitions(core PRIVATE NOMINMAX)
+  target_compile_definitions(core PUBLIC NOMINMAX)
 endif()
 
 if(UNIX)

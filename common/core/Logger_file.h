@@ -26,6 +26,11 @@
 
 #include <core/Logger.h>
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#define PATH_MAX MAX_PATH
+#endif
+
 namespace core {
 
   class Logger_File : public Logger {

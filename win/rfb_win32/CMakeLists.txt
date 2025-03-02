@@ -35,3 +35,8 @@ if(BUILD_WINVNC)
 endif()
 
 target_link_libraries(rfb_win32 user32.lib comctl32.lib wtsapi32.lib version.lib)
+
+if(MSVC)
+  # undef min and max macro
+  target_compile_definitions(rfb_win32 PUBLIC NOMINMAX)
+endif()

@@ -20,7 +20,7 @@
 #include <config.h>
 #endif
 
-#include <string.h>
+#include <core/string.h>
 #include <rfb/encodings.h>
 
 int rfb::encodingNum(const char* name)

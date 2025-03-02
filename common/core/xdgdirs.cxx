@@ -43,6 +43,10 @@
 
 #include <core/xdgdirs.h>
 
+#ifdef _MSC_VER
+#define PATH_MAX MAX_PATH
+#endif
+
 static const char* getvncdir(bool userDir, const char *xdg_env, const char *xdg_def)
 {
   static char dir[PATH_MAX], legacy[PATH_MAX];

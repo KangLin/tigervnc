@@ -33,13 +33,12 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <errno.h>
+#include <unistd.h>
 #endif
 
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 #include <core/Configuration.h>
 #include <core/Exception.h>

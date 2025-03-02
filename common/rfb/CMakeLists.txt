@@ -139,6 +139,12 @@ if(WIN32)
   target_include_directories(rfb PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/win>)
   target_sources(rfb PRIVATE WinPasswdValidator.cxx)
 endif(WIN32)
+if(MSVC)
+  # undef min and max macro
+  target_compile_definitions(rfb PUBLIC NOMINMAX)
+  # Fix "sockaddr": "struct" type redefined
+  target_compile_definitions(rfb PUBLIC WIN32_LEAN_AND_MEAN)
+endif()
 
 if(UNIX AND NOT APPLE)
   target_sources(rfb PRIVATE UnixPasswordValidator.cxx pam.c)

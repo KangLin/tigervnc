@@ -32,13 +32,11 @@
 
 #define DEF_LOGFUNCTION(name, level) \
   inline void v##name(const char* fmt, va_list ap) \
-    __attribute__((__format__ (__printf__, 2, 0))) \
   { \
     if (m_log && (level <= m_level))        \
       m_log->write(level, m_name, fmt, ap); \
   } \
   inline void name(const char* fmt, ...) \
-    __attribute__((__format__ (__printf__, 2, 3))) \
   { \
     if (m_log && (level <= m_level)) {     \
       va_list ap; va_start(ap, fmt);       \
@@ -61,7 +59,7 @@ namespace core {
     int getLevel(void) { return m_level; }
 
     inline void write(int level, const char* format, ...)
-      __attribute__((__format__ (__printf__, 3, 4)))
+        CHECK_FORMAT(3, 4)
     {
       if (m_log && (level <= m_level)) {
         va_list ap;

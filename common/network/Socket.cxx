@@ -32,9 +32,9 @@
 #define errorNumber errno
 #define closesocket close
 #include <sys/socket.h>
+#include <unistd.h>
 #endif
 
-#include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>

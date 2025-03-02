@@ -24,8 +24,8 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
 
+#include <core/string.h>
 #include <core/Logger.h>
 #include <core/LogWriter.h>
 

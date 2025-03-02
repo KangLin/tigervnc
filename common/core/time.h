@@ -26,10 +26,8 @@
 
 #include <limits.h>
 
-struct timeval;
-
 #if defined(_MSC_VER)
-#include <Windows.h>
+#include <winsock2.h>
 #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
 struct timezone
 {
@@ -38,6 +36,8 @@ struct timezone
 };
 
 int gettimeofday(struct timeval* tv, struct timezone* tz);
+#else // #if defined(_MSC_VER)
+#include <sys/time.h>
 #endif
 
 namespace core {

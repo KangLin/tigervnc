@@ -26,18 +26,16 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <core/Exception.h>
-#include <core/string.h>
-
 #ifdef _WIN32
 #include <winsock2.h>
-#include <windows.h>
 #include <ws2tcpip.h>
+#include <windows.h>
 #else
 #include <netdb.h>
 #endif
 
-#include <string.h>
+#include <core/Exception.h>
+#include <core/string.h>
 
 using namespace core;
 

@@ -24,7 +24,7 @@
 #include <assert.h>
 
 #include <core/string.h>
-
+#include <core/time.h>
 #include <rdr/BufferedInStream.h>
 
 using namespace rdr;

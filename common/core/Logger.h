@@ -24,6 +24,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#ifdef _MSC_VER
+#define CHECK_FORMAT(a, b)
+#else
+#define CHECK_FORMAT(a, b) __attribute__((format(printf, a, b)))
+#endif
+
 // Each log writer instance has a unique textual name,
 // and is attached to a particular Logger instance and
 // is assigned a particular log level.
@@ -46,10 +52,7 @@ namespace core {
 
     virtual void write(int level, const char *logname, const char *text) = 0;
     void write(int level, const char* logname, const char* format, va_list ap)
-    #ifndef _MSC_VER 
-        __attribute__((__format__(__printf__, 4, 0)))
-    #endif
-        ;
+        CHECK_FORMAT(4, 0);
     // -=- Register a logger
 
     void registerLogger();
