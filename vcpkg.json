@@ -13,10 +13,21 @@
       "description": "all dependencies",
       "dependencies": [
           "fltk",
-          "x264",
-          "ffmpeg",
+          {
+            "name": "ffmpeg",
+            "features": [
+                "x264"
+            ]
+          },
           "nettle",
-          "gettext"
+          {
+            "name": "gettext",
+            "features": [
+                "nls",
+                "runtime-tools",
+                "tools"
+            ]
+          }
       ]
     }
   }

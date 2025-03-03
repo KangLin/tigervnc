@@ -106,8 +106,7 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_TOOLCHAIN_FILE="${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake" ^
           -DVCPKG_MANIFEST_FEATURES="all" ^
-          -DENABLE_NLS="AUTO" -DENABLE_H264="AUTO" -DENABLE_GNUTLS="AUTO" -DENABLE_NETTLE="AUTO" ^
-          -DBUILD_VIEWER=OFF
+          -DENABLE_NLS="AUTO" -DENABLE_H264="AUTO" -DENABLE_GNUTLS="AUTO" -DENABLE_NETTLE="AUTO"
       - name: Build
         working-directory: build
         run: cmake --build .
