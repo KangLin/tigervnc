@@ -39,7 +39,7 @@ jobs:
           name: test-results-linux
           path: build/tests/unit/test-results.xml
 
-  build-windows:
+  build-windows-mingw:
     runs-on: windows-latest
     timeout-minutes: 20
     defaults:
@@ -105,7 +105,9 @@ jobs:
         run: cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build ^
           -DCMAKE_INSTALL_PREFIX=install ^
           -DCMAKE_TOOLCHAIN_FILE="${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake" ^
-          -DVCPKG_MANIFEST_FEATURES="all"
+          -DVCPKG_MANIFEST_FEATURES="all" ^
+          -DENABLE_NLS="AUTO" -DENABLE_H264="AUTO" -DENABLE_GNUTLS="AUTO" -DENABLE_NETTLE="AUTO" ^
+          -DBUILD_VIEWER=OFF
       - name: Build
         working-directory: build
         run: cmake --build .
